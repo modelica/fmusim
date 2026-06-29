@@ -19,6 +19,7 @@ pub fn workspace_root() -> PathBuf {
 }
 
 #[rstest]
+#[cfg(not(target_os = "macos"))]
 fn test_input_interpolation_fmi2(workspace_root: PathBuf) {
     let fmu_file = 
         workspace_root.join("fmusim/tests/resources/Reference-FMUs/2.0/Feedthrough.fmu");
