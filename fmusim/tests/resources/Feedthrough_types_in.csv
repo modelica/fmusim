@@ -1,0 +1,2 @@
+time,Float32_continuous_input,Float32_discrete_input,Float64_continuous_input,Float64_discrete_input,Int8_input,UInt8_input,Int16_input,UInt16_input,Int32_input,UInt32_input,Int64_input,UInt64_input,Boolean_input,String_input,Binary_input,Enumeration_input
+0,-0.32,0.32,-0.64,0.64,-8,8,-16,16,-32,32,-64,64,true,bar,ff00,2

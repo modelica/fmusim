@@ -1,0 +1,3 @@
+time,Float64_continuous_input,Float64_discrete_input,Int32_input,Boolean_input,String_input,Enumeration_input
+0,-4.94065645841247e-324,-1.7976931348623158e+308,-2147483648,false,min,1
+1,4.94065645841247e-324,1.7976931348623158e+308,2147483647,true,max,2

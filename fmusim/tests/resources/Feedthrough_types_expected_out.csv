@@ -1,0 +1,7 @@
+"time","Float32_continuous_output","Float32_discrete_output","Float64_continuous_output","Float64_discrete_output","Int8_output","UInt8_output","Int16_output","UInt16_output","Int32_output","UInt32_output","Int64_output","UInt64_output","Boolean_output","String_output","Binary_output","Enumeration_output"
+0.5,-0.32,0.32,-0.64,0.64,-8,8,-16,16,-32,32,-64,64,true,bar,ff00,2
+1,-0.32,0.32,-0.64,0.64,-8,8,-16,16,-32,32,-64,64,true,bar,ff00,2
+1.5,-0.32,0.32,-0.64,0.64,-8,8,-16,16,-32,32,-64,64,true,bar,ff00,2
+2,-0.32,0.32,-0.64,0.64,-8,8,-16,16,-32,32,-64,64,true,bar,ff00,2
+2.5,-0.32,0.32,-0.64,0.64,-8,8,-16,16,-32,32,-64,64,true,bar,ff00,2
+3,-0.32,0.32,-0.64,0.64,-8,8,-16,16,-32,32,-64,64,true,bar,ff00,2
