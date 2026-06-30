@@ -7,6 +7,7 @@ edition = "2024"
 libloading = "0.9.0"
 clap = { version = "4.6.1", features = ["derive"] }
 clap_complete = "4.6.5"
+crash-handler = "0.7"
 fmi-rs = { path = "../fmi-rs/fmi-rs" }
 fmi-rs-sundials = { path = "../fmi-rs/fmi-rs-sundials" }
 fmi-rs-libxml2 = { path = "../fmi-rs/fmi-rs-libxml2" }

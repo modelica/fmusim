@@ -12,6 +12,7 @@ use serde::Deserialize;
 use tempfile::TempDir;
 use std::{error::Error, io, path::PathBuf};
 use std::{path::Path, process::ExitCode};
+use crash_handler::{CrashContext, CrashEvent, CrashEventResult, CrashHandler};
 
 #[derive(ValueEnum, Clone, Debug, Deserialize)]
 enum InterfaceType {
@@ -222,7 +223,51 @@ macro_rules! error {
     };
 }
 
+struct CrashEventHandler;
+
+unsafe impl CrashEvent for CrashEventHandler {
+    fn on_crash(&self, context: &CrashContext) -> CrashEventResult {
+
+        #[cfg(target_os = "windows")]
+        let description = match context.exception_code as u32 {
+            0xC0000005 => "ACCESS_VIOLATION",
+            0xC0000094 => "INTEGER_DIVIDE_BY_ZERO",
+            0xC00000fd => "STACK_OVERFLOW",
+            0xC000001d => "ILLEGAL_INSTRUCTION",
+            0xC0000006 => "IN_PAGE_ERROR",
+            0xC0000096 => "PRIVILEGED_INSTRUCTION",
+            0x80000003 => "BREAKPOINT",
+            _ => "UNKNOWN_HARDWARE_EXCEPTION"
+        };
+        
+        #[cfg(not(target_os = "windows"))]
+        let description = match context.exception_code {
+            4  => "SIGILL",
+            7  => "SIGBUS",
+            8  => "SIGFPE",
+            11 => "SIGSEGV",
+            _  => "Unknown POSIX Signal"
+        };
+
+        eprintln!("======================================================================");
+        eprintln!("APPLICATION CRASH REPORT");
+        eprintln!("======================================================================");
+        eprintln!("Process ID:          {}", context.process_id);
+        eprintln!("Thread ID:           {}", context.thread_id);
+        eprintln!("Exception Code:      0x{:X} ({}) ", context.exception_code, description);
+        eprintln!("Fault Address:       {:?}", context.exception_pointers);
+        eprintln!();
+        eprintln!("The application encountered an unexpected exception.");
+
+        CrashEventResult::Handled(true)
+    }
+}
+
 fn main() -> ExitCode {
+
+    let _crash_handler = CrashHandler::attach(Box::new(CrashEventHandler))
+        .expect("Failed to attach crash handler");
+
     let cli = Cli::parse();
 
     match &cli.command {
