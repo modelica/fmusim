@@ -5,14 +5,15 @@ mod validate;
 
 use clap::{Args, CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
+use crash_handler::{CrashEventResult, CrashHandler, make_crash_event};
 use fmi_rs::{
-    model_description::{FMIMajorVersion, peak_fmi_major_version}, util::{extract_zip_archive},
+    model_description::{FMIMajorVersion, peak_fmi_major_version},
+    util::extract_zip_archive,
 };
 use serde::Deserialize;
-use tempfile::TempDir;
 use std::{error::Error, io, path::PathBuf};
 use std::{path::Path, process::ExitCode};
-use crash_handler::{CrashContext, CrashEvent, CrashEventResult, CrashHandler};
+use tempfile::TempDir;
 
 #[derive(ValueEnum, Clone, Debug, Deserialize)]
 enum InterfaceType {
@@ -47,7 +48,12 @@ fn parse_start_value(s: &str) -> Result<(String, String), String> {
 }
 
 #[derive(Parser, Debug)]
-#[command(name = "fmusim", version, propagate_version = true, about = "Simulate and validate Functional Mock-up Units")]
+#[command(
+    name = "fmusim",
+    version,
+    propagate_version = true,
+    about = "Simulate and validate Functional Mock-up Units"
+)]
 struct Cli {
     /// Path to the FMU file
     #[command(subcommand)]
@@ -85,7 +91,7 @@ enum Commands {
         Example configuration file:\n\n\
         fmu_file = \"BouncingBall.fmu\"\n\
         start_values = [[\"h\", \"1.5\"]]\n\
-        stop_time = 3.0\n", 
+        stop_time = 3.0\n",
         hide = true
     )]
     SimulateConfig(SimulateConfigArgs),
@@ -223,50 +229,14 @@ macro_rules! error {
     };
 }
 
-struct CrashEventHandler;
-
-unsafe impl CrashEvent for CrashEventHandler {
-    fn on_crash(&self, context: &CrashContext) -> CrashEventResult {
-
-        #[cfg(target_os = "windows")]
-        let description = match context.exception_code as u32 {
-            0xC0000005 => "ACCESS_VIOLATION",
-            0xC0000094 => "INTEGER_DIVIDE_BY_ZERO",
-            0xC00000fd => "STACK_OVERFLOW",
-            0xC000001d => "ILLEGAL_INSTRUCTION",
-            0xC0000006 => "IN_PAGE_ERROR",
-            0xC0000096 => "PRIVILEGED_INSTRUCTION",
-            0x80000003 => "BREAKPOINT",
-            _ => "UNKNOWN_HARDWARE_EXCEPTION"
-        };
-        
-        #[cfg(not(target_os = "windows"))]
-        let description = match context.exception_code {
-            4  => "SIGILL",
-            7  => "SIGBUS",
-            8  => "SIGFPE",
-            11 => "SIGSEGV",
-            _  => "Unknown POSIX Signal"
-        };
-
-        eprintln!("======================================================================");
-        eprintln!("APPLICATION CRASH REPORT");
-        eprintln!("======================================================================");
-        eprintln!("Process ID:          {}", context.process_id);
-        eprintln!("Thread ID:           {}", context.thread_id);
-        eprintln!("Exception Code:      0x{:X} ({}) ", context.exception_code, description);
-        eprintln!("Fault Address:       {:?}", context.exception_pointers);
-        eprintln!();
-        eprintln!("The application encountered an unexpected exception.");
-
-        CrashEventResult::Handled(true)
-    }
-}
-
 fn main() -> ExitCode {
-
-    let _crash_handler = CrashHandler::attach(Box::new(CrashEventHandler))
-        .expect("Failed to attach crash handler");
+    let _crash_handler = CrashHandler::attach(unsafe {
+        make_crash_event(|_| {
+            eprintln!("The application crashed due to an unexpected exception.");
+            CrashEventResult::Handled(true)
+        })
+    })
+    .expect("Failed to attach crash handler");
 
     let cli = Cli::parse();
 
@@ -298,12 +268,10 @@ fn main() -> ExitCode {
 fn prepare_fmu<P: AsRef<Path>>(
     fmu_path: P,
 ) -> Result<(TempDir, PathBuf, FMIMajorVersion), Box<dyn Error>> {
+    let unzipdir =
+        TempDir::new().map_err(|e| format!("Failed to create temporary directory: {e}"))?;
 
-    let unzipdir = TempDir::new()
-        .map_err(|e | format!("Failed to create temporary directory: {e}"))?;
-
-    extract_zip_archive(fmu_path, &unzipdir)
-        .map_err(|e| format!("Failed to extract FMU: {e}"))?;
+    extract_zip_archive(fmu_path, &unzipdir).map_err(|e| format!("Failed to extract FMU: {e}"))?;
 
     let xml_path = unzipdir.path().join("modelDescription.xml");
 

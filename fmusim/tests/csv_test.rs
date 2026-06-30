@@ -14,15 +14,14 @@ pub fn workspace_root() -> PathBuf {
     if !reference_fmus_dir.exists() {
         download_reference_fmus(&reference_fmus_dir).unwrap()
     }
- 
+
     workspace_root
 }
 
 #[rstest]
 #[cfg(not(target_os = "macos"))]
 fn test_input_interpolation_fmi2(workspace_root: PathBuf) {
-    let fmu_file = 
-        workspace_root.join("fmusim/tests/resources/Reference-FMUs/2.0/Feedthrough.fmu");
+    let fmu_file = workspace_root.join("fmusim/tests/resources/Reference-FMUs/2.0/Feedthrough.fmu");
     let fmusim_path = workspace_root.join("target/debug/fmusim");
     let input_file =
         workspace_root.join("fmusim/tests/resources/fmi2/Feedthrough_interpolation_in.csv");
@@ -74,8 +73,7 @@ fn test_input_interpolation_fmi2(workspace_root: PathBuf) {
 
 #[rstest]
 fn test_input_interpolation_fmi3(workspace_root: PathBuf) {
-    let fmu_file = 
-        workspace_root.join("fmusim/tests/resources/Reference-FMUs/3.0/Feedthrough.fmu");
+    let fmu_file = workspace_root.join("fmusim/tests/resources/Reference-FMUs/3.0/Feedthrough.fmu");
     let fmusim_path = workspace_root.join("target/debug/fmusim");
     let input_file =
         workspace_root.join("fmusim/tests/resources/fmi3/Feedthrough_interpolation_in.csv");
