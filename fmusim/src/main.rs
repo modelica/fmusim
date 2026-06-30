@@ -46,8 +46,7 @@ fn parse_start_value(s: &str) -> Result<(String, String), String> {
 }
 
 #[derive(Parser, Debug)]
-#[command(name = "fmusim", version, about = "FMU simulation tool")]
-#[command(propagate_version = true)]
+#[command(name = "fmusim", version, propagate_version = true, about = "Simulate and validate Functional Mock-up Units")]
 struct Cli {
     /// Path to the FMU file
     #[command(subcommand)]
