@@ -16,13 +16,13 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: fmusim-linux
+            artifact_name: fmusim-linux-x86_64
             asset_name: fmusim
           - os: macos-latest
-            artifact_name: fmusim-macos
+            artifact_name: fmusim-macos-aarch64
             asset_name: fmusim
           - os: windows-latest
-            artifact_name: fmusim-windows
+            artifact_name: fmusim-windows-x86_64
             asset_name: fmusim.exe
 
     steps:
@@ -40,9 +40,17 @@ jobs:
     - name: Build release
       run: cargo build --release
 
+    - name: Stage Artifacts
+      shell: bash
+      run: |
+        mkdir -p dist
+        cp target/release/${{ matrix.asset_name }} dist/
+        cp README.md dist/
+        cp LICENSE dist/
+
     - name: Upload Artifact
       uses: actions/upload-artifact@v7
       with:
         name: ${{ matrix.artifact_name }}
         path: |
-          target/release/${{ matrix.asset_name }}
+          dist/
