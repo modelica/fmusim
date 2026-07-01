@@ -202,6 +202,14 @@ pub struct SimulateArgs {
     /// The solver to integrate Model Exchange FMUs
     #[arg(long, value_enum, default_value_t = SolverType::Cvode)]
     solver: SolverType,
+
+    /// File to read the serialized FMU state from
+    #[arg(long)]
+    initial_fmu_state_file: Option<String>,
+
+    /// File to write the serialized FMU state to
+    #[arg(long)]
+    final_fmu_state_file: Option<String>,
 }
 
 #[derive(Debug, Args)]
