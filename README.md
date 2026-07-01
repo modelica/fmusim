@@ -4,7 +4,19 @@ Simulate and validate Functional Mock-up Units
 
 ## Installation
 
-Download the latest build from [GitHub Actions](https://github.com/modelica/fmusim/actions/)
+Install fmusim with our standalone installers
+
+```bash
+# on macOS and Linux
+curl -LsSf https://raw.githubusercontent.com/modelica/fmusim/refs/heads/main/install.sh | sh
+```
+
+```bash
+# on Windows
+powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/modelica/fmusim/refs/heads/main/install.ps1 | iex"
+```
+
+or download the [latest release](https://github.com/modelica/fmusim/releases/latest/).
 
 ## Build with cargo
 
