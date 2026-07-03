@@ -14,8 +14,7 @@ $ErrorActionPreference = "Stop"
 # 1. Define paths (Installs to C:\Users\<User>\AppData\Local\<AppName>)
 $installDir = Join-Path $env:LOCALAPPDATA $appName
 $tempZip    = Join-Path $env:TEMP "$zipName"
-# $downloadUrl = "https://github.com/$repoUser/$repoName/releases/latest/download/$zipName"
-$downloadUrl = "file:///C:/Users/tsr2/Downloads/$zipName"
+$downloadUrl = "https://github.com/$repoUser/$repoName/releases/latest/download/$zipName"
 
 Write-Host "Installing $appName..." -ForegroundColor Cyan
 
