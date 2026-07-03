@@ -16,13 +16,13 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: fmusim-linux-x86_64
+            artifact_name: fmusim-x86_64-linux
             asset_name: fmusim
           - os: macos-latest
-            artifact_name: fmusim-macos-aarch64
+            artifact_name: fmusim-aarch64-darwin
             asset_name: fmusim
           - os: windows-latest
-            artifact_name: fmusim-windows-x86_64
+            artifact_name: fmusim-x86_64-windows
             asset_name: fmusim.exe
 
     steps:
