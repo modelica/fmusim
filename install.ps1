@@ -1,6 +1,7 @@
 # ==========================================
 # CONFIGURATION
 # ==========================================
+$repoUser   = "modelica"
 $repoName   = "fmusim"
 $appName    = "fmusim" # The name of the folder where it will live
 # The name of your zip file asset as it appears on GitHub:
