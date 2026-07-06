@@ -49,3 +49,39 @@ Remove-Item -Force $tempZip
 
 Write-Host "`nSuccessfully installed $appName!" -ForegroundColor Green
 Write-Host "You may need to restart your terminal/IDE for the PATH changes to take effect." -ForegroundColor Yellow
+
+# ==========================================
+# 7. AUTOMATIC POWERSHELL AUTO-COMPLETE SETUP
+# ==========================================
+Write-Host "Setting up PowerShell auto-completion..." -ForegroundColor Gray
+
+# Define where the completion script will live
+$completionFile = Join-Path $installDir "_$appName.ps1"
+
+try {
+    # Generate the completion file by running the newly installed app
+    # (Adjust the arguments below if your completion flag is named differently)
+    & (Join-Path $installDir "$appName.exe") completion power-shell | Out-File -FilePath $completionFile -Encoding utf8
+
+    # Check if the user has a PowerShell profile, create it if it doesn't exist
+    if (!(Test-Path $PROFILE)) {
+        New-Item -Type File -Path $PROFILE -Force | Out-Null
+    }
+
+    # Line to add to the profile
+    $profileLine = ". `"$completionFile`""
+
+    # Read the current profile content to avoid duplicating the line
+    $profileContent = Get-Content $PROFILE -ErrorAction SilentlyContinue
+    if ($profileContent -notcontains $profileLine) {
+        Add-Content -Path $PROFILE -Value "`n$profileLine"
+        Write-Host "Auto-completion added to your PowerShell `$PROFILE." -ForegroundColor Gray
+    }
+
+    # Dot-source it immediately so it works in the current active session
+    . $completionFile
+    Write-Host "Auto-completion activated for this session!" -ForegroundColor Green
+}
+catch {
+    Write-Warning "Could not configure auto-completion: $_"
+}
