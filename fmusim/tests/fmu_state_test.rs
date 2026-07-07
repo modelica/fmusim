@@ -14,9 +14,9 @@ fn test_serialize_fmu_state(
     #[case] fmi_major_version: u32,
 ) {
     let fmu_file = workspace_root.join(format!(
-        "fmusim/tests/resources/Reference-FMUs/{fmi_major_version}.0/BouncingBall.fmu"
+        "fmusim/tests/resources/Reference-FMUs/{fmi_major_version}.0/Dahlquist.fmu"
     ));
-    let fmu_state_file = temp_dir.join(format!("BouncingBall_fmi{fmi_major_version}_state.bin"));
+    let fmu_state_file = temp_dir.join(format!("Dahlquist_fmi{fmi_major_version}_state.bin"));
 
     // simulate to 1.5 seconds and save the FMU state to a file
     run_fmusim(&[
