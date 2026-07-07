@@ -5,7 +5,7 @@ use rstest::*;
 use std::path::PathBuf;
 
 #[rstest]
-#[cfg_attr(target_os = "macos", ignore)] 
+#[cfg_attr(target_os = "macos", ignore)]
 #[case(2)]
 #[case(3)]
 fn test_serialize_fmu_state(

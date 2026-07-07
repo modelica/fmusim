@@ -1,13 +1,15 @@
 #![allow(non_camel_case_types, non_snake_case, non_upper_case_globals)]
+mod build;
 mod info;
 mod simulate;
 mod validate;
 
 use clap::{Args, CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
+use colored::Colorize;
 use crash_handler::{CrashEventResult, CrashHandler, make_crash_event};
 use fmi_rs::{
-    model_description::{FMIMajorVersion, peak_fmi_major_version},
+    model_description::{FMIMajorVersion, peek_fmi_major_version},
     util::extract_zip_archive,
 };
 use serde::Deserialize;
@@ -95,6 +97,8 @@ enum Commands {
         hide = true
     )]
     SimulateConfig(SimulateConfigArgs),
+    /// Build the platform binary for an FMU with CMake
+    Build(BuildArgs),
 }
 
 #[derive(Debug, Args)]
@@ -219,6 +223,32 @@ struct SimulateConfigArgs {
 }
 
 #[derive(Debug, Args)]
+struct BuildArgs {
+    /// Path to the FMU file
+    fmu_file: String,
+
+    /// Path to the generated CMake project directory (default: temporary directory)
+    #[arg(long)]
+    project_path: Option<String>,
+
+    /// CMake generator to use (default: platform default)
+    #[arg(long)]
+    cmake_generator: Option<String>,
+
+    /// CMake architecture to use (default: platform default)
+    #[arg(long)]
+    cmake_architecture: Option<String>,
+
+    /// Additional CMake options to pass to the build system
+    #[arg(long, value_delimiter = ' ')]
+    cmake_options: Vec<String>,
+
+    /// Create a debug build (default: release build)
+    #[arg(long)]
+    debug: bool,
+}
+
+#[derive(Debug, Args)]
 struct TestArgs {
     /// Path to the FMU file
     fmu_file: String,
@@ -248,7 +278,7 @@ fn main() -> ExitCode {
 
     let cli = Cli::parse();
 
-    match &cli.command {
+    let result = match &cli.command {
         Commands::Completion { shell } => {
             let target_shell = match shell {
                 ShellArg::Bash => Shell::Bash,
@@ -263,12 +293,21 @@ fn main() -> ExitCode {
 
             clap_complete::generate(target_shell, &mut cmd, bin_name, &mut io::stdout());
 
-            ExitCode::SUCCESS
+            Ok(())
         }
         Commands::Info(args) => info::show_fmu_info(args),
         Commands::Validate(args) => validate::validate_fmu(args),
         Commands::Simulate(args) => simulate::simulate_fmu(args),
         Commands::SimulateConfig(args) => simulate::simulate_config(args),
+        Commands::Build(args) => build::build_platform_binary(args),
+    };
+
+    match result {
+        Ok(_) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("{}: {}", "error".bright_red().bold(), e);
+            ExitCode::FAILURE
+        }
     }
 }
 
@@ -283,7 +322,7 @@ fn prepare_fmu<P: AsRef<Path>>(
 
     let xml_path = unzipdir.path().join("modelDescription.xml");
 
-    let fmi_major_version = peak_fmi_major_version(&xml_path)
+    let fmi_major_version = peek_fmi_major_version(&xml_path)
         .map_err(|e| format!("Failed to determine FMI version: {e}"))?;
 
     Ok((unzipdir, xml_path, fmi_major_version))

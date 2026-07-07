@@ -1,10 +1,10 @@
-use std::{process::ExitCode, vec};
+use std::vec;
 
 use colored::Colorize;
 use fmi_rs::{model_description::FMIMajorVersion, util::get_zip_contents};
 use fmi_rs_libxml2::validate_model_description_against_xsd;
 
-use crate::{ValidateArgs, error, prepare_fmu};
+use crate::{ValidateArgs, prepare_fmu};
 
 /// Validate ZIP archive
 fn validate_zip_archive(fmu_file: &str) -> Vec<String> {
@@ -28,19 +28,14 @@ fn validate_zip_archive(fmu_file: &str) -> Vec<String> {
     problems
 }
 
-pub fn validate_fmu(args: &ValidateArgs) -> ExitCode {
+pub fn validate_fmu(args: &ValidateArgs) -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", "    Validating ZIP archive".green().bold());
 
     for problem in validate_zip_archive(&args.fmu_file) {
         println!("{}: {}", "error".red().bold(), problem);
     }
 
-    let (_unzipdir, xml_path, fmi_major_version) = match prepare_fmu(&args.fmu_file) {
-        Ok(val) => val,
-        Err(message) => {
-            error!(message);
-        }
-    };
+    let (_unzipdir, xml_path, fmi_major_version) = prepare_fmu(&args.fmu_file)?;
 
     println!("{}", "    Validating model description".green().bold());
 
@@ -50,26 +45,16 @@ pub fn validate_fmu(args: &ValidateArgs) -> ExitCode {
         println!("{}: {}", "error".red().bold(), problem);
     }
 
-    let text = match std::fs::read_to_string(xml_path) {
-        Ok(content) => content,
-        Err(e) => {
-            let message = format!("Failed to read modelDescription.xml: {e}");
-            error!(message);
-        }
-    };
+    let text = std::fs::read_to_string(xml_path)
+        .map_err(|e| format!("Failed to read modelDescription.xml: {e}"))?;
 
     let opt = roxmltree::ParsingOptions {
         allow_dtd: true,
         ..roxmltree::ParsingOptions::default()
     };
 
-    let doc = match roxmltree::Document::parse_with_options(&text, opt) {
-        Ok(doc) => doc,
-        Err(e) => {
-            let message = format!("Failed to parse modelDescription.xml: {e}");
-            error!(message);
-        }
-    };
+    let doc = roxmltree::Document::parse_with_options(&text, opt)
+        .map_err(|e| format!("Failed to parse modelDescription.xml: {e}"))?;
 
     let root = doc.root_element();
 
@@ -78,24 +63,14 @@ pub fn validate_fmu(args: &ValidateArgs) -> ExitCode {
     match &fmi_major_version {
         FMIMajorVersion::V2 => {
             let model_description =
-                match fmi_rs::model_description::fmi2::ModelDescription::from_node(&root) {
-                    Ok(md) => md,
-                    Err(e) => {
-                        let message = format!("Failed to parse modelDescription.xml: {e}");
-                        error!(message);
-                    }
-                };
+                fmi_rs::model_description::fmi2::ModelDescription::from_node(&root)
+                    .map_err(|e| format!("Failed to parse modelDescription.xml: {e}"))?;
             problems.extend(model_description.validate());
         }
         FMIMajorVersion::V3 => {
             let model_description =
-                match fmi_rs::model_description::fmi3::ModelDescription::from_node(&root) {
-                    Ok(md) => md,
-                    Err(e) => {
-                        let message = format!("Failed to parse modelDescription.xml: {e}");
-                        error!(message);
-                    }
-                };
+                fmi_rs::model_description::fmi3::ModelDescription::from_node(&root)
+                    .map_err(|e| format!("Failed to parse modelDescription.xml: {e}"))?;
             problems.extend(model_description.validate());
         }
     };
@@ -155,8 +130,8 @@ pub fn validate_fmu(args: &ValidateArgs) -> ExitCode {
     }
 
     if problems.is_empty() {
-        ExitCode::SUCCESS
+        Ok(())
     } else {
-        ExitCode::FAILURE
+        Err("Validation failed".into())
     }
 }

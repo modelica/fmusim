@@ -1,19 +1,12 @@
-use std::process::ExitCode;
-
 use colored::Colorize;
 use fmi_rs::model_description::FMIMajorVersion;
 
-use crate::{InfoArgs, error, prepare_fmu};
+use crate::{InfoArgs, prepare_fmu};
 
-pub fn show_fmu_info(args: &InfoArgs) -> ExitCode {
-    let (unzipdir, xml_path, fmi_major_version) = match prepare_fmu(&args.fmu_file) {
-        Ok(val) => val,
-        Err(message) => {
-            error!(message);
-        }
-    };
+pub fn show_fmu_info(args: &InfoArgs) -> Result<(), Box<dyn std::error::Error>> {
+    let (unzipdir, xml_path, fmi_major_version) = prepare_fmu(&args.fmu_file)?;
 
-    let entries = std::fs::read_dir(unzipdir.path().join("binaries")).unwrap();
+    let entries = std::fs::read_dir(unzipdir.path().join("binaries"))?;
 
     let mut platform_dirs: Vec<String> = vec![];
 
@@ -31,13 +24,8 @@ pub fn show_fmu_info(args: &InfoArgs) -> ExitCode {
     match fmi_major_version {
         FMIMajorVersion::V2 => {
             let model_description =
-                match fmi_rs::model_description::fmi2::ModelDescription::from_path(&xml_path) {
-                    Ok(md) => md,
-                    Err(e) => {
-                        let message = format!("Failed to parse modelDescription.xml: {e}");
-                        error!(message);
-                    }
-                };
+                fmi_rs::model_description::fmi2::ModelDescription::from_path(&xml_path)
+                    .map_err(|e| format!("Failed to read model description: {e}"))?;
 
             println!("{}", "Model Information".bold());
             println!();
@@ -107,13 +95,8 @@ pub fn show_fmu_info(args: &InfoArgs) -> ExitCode {
         }
         FMIMajorVersion::V3 => {
             let model_description =
-                match fmi_rs::model_description::fmi3::ModelDescription::from_path(&xml_path) {
-                    Ok(md) => md,
-                    Err(e) => {
-                        let message = format!("Failed to parse modelDescription.xml: {e}");
-                        error!(message);
-                    }
-                };
+                fmi_rs::model_description::fmi3::ModelDescription::from_path(&xml_path)
+                    .map_err(|e| format!("Failed to read model description: {e}"))?;
 
             println!("{}", "Model Information".bold());
             println!();
@@ -183,5 +166,5 @@ pub fn show_fmu_info(args: &InfoArgs) -> ExitCode {
         }
     }
 
-    ExitCode::SUCCESS
+    Ok(())
 }
