@@ -31,11 +31,11 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install CMake
+    - name: Install CMake and build tools
       run: |
         if [ "$RUNNER_OS" == "Linux" ]; then
           sudo apt-get update
-          sudo apt-get install -y cmake
+          sudo apt-get install -y cmake build-essential
         elif [ "$RUNNER_OS" == "macOS" ]; then
           brew install cmake
         elif [ "$RUNNER_OS" == "Windows" ]; then
