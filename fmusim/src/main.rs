@@ -10,7 +10,7 @@ use colored::Colorize;
 use crash_handler::{CrashEventResult, CrashHandler, make_crash_event};
 use fmi_rs::{
     model_description::{FMIMajorVersion, peek_fmi_major_version},
-    util::{extract_zip_archive, get_zip_contents},
+    zip::{create_zip_archive, extract_zip_archive, get_zip_contents},
 };
 use serde::Deserialize;
 use std::{error::Error, io, path::PathBuf};
@@ -90,6 +90,20 @@ enum Commands {
     List {
         /// Path to the FMU file
         fmu_file: String,
+    },
+    /// Create an FMU archive from a folder
+    Pack {
+        /// Path to the unpacked FMU
+        source_dir: String,
+        /// Path to the FMU file to create
+        fmu_file: String,
+    },
+    /// Unpack an FMU archive to a folder
+    Unpack {
+        /// Path to the FMU file to unpack
+        fmu_file: String,
+        /// Path to the directory to unpack the FMU to
+        target_dir: String,
     },
     /// Validate an FMU
     Validate {
@@ -278,6 +292,14 @@ fn main() -> ExitCode {
         Commands::Completion { shell } => generate_completions(shell),
         Commands::Info { fmu_file } => info::show_fmu_info(fmu_file),
         Commands::List { fmu_file } => list_fmu_contents(fmu_file),
+        Commands::Pack {
+            source_dir,
+            fmu_file,
+        } => create_zip_archive(source_dir, fmu_file),
+        Commands::Unpack {
+            fmu_file,
+            target_dir,
+        } => extract_zip_archive(fmu_file, target_dir),
         Commands::Validate { fmu_file } => validate::validate_fmu(fmu_file),
         Commands::Simulate(args) => simulate::simulate_fmu(args),
         Commands::SimulateConfig { config_file } => simulate::simulate_config(config_file),

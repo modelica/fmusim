@@ -1,7 +1,7 @@
 use std::vec;
 
 use colored::Colorize;
-use fmi_rs::{model_description::FMIMajorVersion, util::get_zip_contents};
+use fmi_rs::{model_description::FMIMajorVersion, zip::get_zip_contents};
 use fmi_rs_libxml2::validate_model_description_against_xsd;
 
 use crate::prepare_fmu;
