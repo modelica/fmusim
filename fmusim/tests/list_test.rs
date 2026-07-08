@@ -2,7 +2,9 @@ mod common;
 
 use common::workspace_root;
 use rstest::*;
-use std::{path::PathBuf, process::Command};
+use std::path::PathBuf;
+
+use crate::common::run_fmusim;
 
 #[rstest]
 fn test_list_fmu_archive_contents(workspace_root: PathBuf) {
