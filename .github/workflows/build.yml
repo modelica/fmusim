@@ -1,5 +1,9 @@
 name: Build fmusim
 
+env:
+  RUST_BACKTRACE: "1"
+  CARGO_TERM_VERBOSE: "true"
+
 on:
   push:
     branches: [ "main" ]
@@ -31,23 +35,11 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install CMake and build tools
-      run: |
-        if [ "$RUNNER_OS" == "Linux" ]; then
-          sudo apt-get update
-          sudo apt-get install -y cmake build-essential
-        elif [ "$RUNNER_OS" == "macOS" ]; then
-          brew install cmake
-        elif [ "$RUNNER_OS" == "Windows" ]; then
-          choco install cmake
-        fi
-      shell: bash
-
     - name: Set up Rust
       uses: dtolnay/rust-toolchain@stable
 
     - name: Run tests
-      run: cargo test -p fmusim
+      run: cargo test -p fmusim -- --nocapture
 
     - name: Build release
       run: cargo build --release

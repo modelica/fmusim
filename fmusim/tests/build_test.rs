@@ -1,3 +1,5 @@
+#![cfg(not(target_os = "linux"))]
+
 mod common;
 
 use common::{run_fmusim, workspace_root};

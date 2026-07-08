@@ -44,7 +44,8 @@ pub fn run_fmusim(args: &[&str]) {
 
     if !simulation_output.status.success() {
         panic!(
-            "Simulation failed: {}\nStderr: {}",
+            "fmusim failed (status: {:?})\n--- Stdout ---\n{}\n--- Stderr ---\n{}",
+            simulation_output.status.code(),
             String::from_utf8_lossy(&simulation_output.stdout),
             String::from_utf8_lossy(&simulation_output.stderr)
         );
