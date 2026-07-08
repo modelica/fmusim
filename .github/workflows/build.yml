@@ -31,6 +31,18 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Install CMake
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          sudo apt-get update
+          sudo apt-get install -y cmake
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          brew install cmake
+        elif [ "$RUNNER_OS" == "Windows" ]; then
+          choco install cmake
+        fi
+      shell: bash
+
     - name: Set up Rust
       uses: dtolnay/rust-toolchain@stable
 
