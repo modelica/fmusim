@@ -10,7 +10,7 @@ use colored::Colorize;
 use crash_handler::{CrashEventResult, CrashHandler, make_crash_event};
 use fmi_rs::{
     model_description::{FMIMajorVersion, peek_fmi_major_version},
-    util::extract_zip_archive,
+    util::{extract_zip_archive, get_zip_contents},
 };
 use serde::Deserialize;
 use std::{error::Error, io, path::PathBuf};
@@ -82,9 +82,20 @@ enum Commands {
         shell: ShellArg,
     },
     /// Display information about an FMU
-    Info(InfoArgs),
+    Info {
+        /// Path to the FMU file
+        fmu_file: String,
+    },
+    /// List the files contained in an FMU archive
+    List {
+        /// Path to the FMU file
+        fmu_file: String,
+    },
     /// Validate an FMU
-    Validate(ValidateArgs),
+    Validate {
+        /// Path to the FMU file
+        fmu_file: String,
+    },
     /// Simulate an FMU
     Simulate(SimulateArgs),
     /// Simulate an FMU using a configuration file
@@ -96,21 +107,12 @@ enum Commands {
         stop_time = 3.0\n",
         hide = true
     )]
-    SimulateConfig(SimulateConfigArgs),
+    SimulateConfig {
+        /// Path to the configuration file
+        config_file: String,
+    },
     /// Build the platform binary for an FMU with CMake
     Build(BuildArgs),
-}
-
-#[derive(Debug, Args)]
-struct InfoArgs {
-    /// Path to the FMU file
-    fmu_file: String,
-}
-
-#[derive(Debug, Args)]
-struct ValidateArgs {
-    /// Path to the FMU file
-    fmu_file: String,
 }
 
 #[derive(Debug, Args, Deserialize, Clone, Default)]
@@ -217,12 +219,6 @@ pub struct SimulateArgs {
 }
 
 #[derive(Debug, Args)]
-struct SimulateConfigArgs {
-    /// Path to the configuration file
-    config_path: String,
-}
-
-#[derive(Debug, Args)]
 struct BuildArgs {
     /// Path to the FMU file
     fmu_file: String,
@@ -278,27 +274,13 @@ fn main() -> ExitCode {
 
     let cli = Cli::parse();
 
-    let result = match &cli.command {
-        Commands::Completion { shell } => {
-            let target_shell = match shell {
-                ShellArg::Bash => Shell::Bash,
-                ShellArg::Zsh => Shell::Zsh,
-                ShellArg::Fish => Shell::Fish,
-                ShellArg::PowerShell => Shell::PowerShell,
-                ShellArg::Elvish => Shell::Elvish,
-            };
-
-            let mut cmd = Cli::command();
-            let bin_name = cmd.get_name().to_string();
-
-            clap_complete::generate(target_shell, &mut cmd, bin_name, &mut io::stdout());
-
-            Ok(())
-        }
-        Commands::Info(args) => info::show_fmu_info(args),
-        Commands::Validate(args) => validate::validate_fmu(args),
+    let result: Result<(), Box<dyn Error>> = match &cli.command {
+        Commands::Completion { shell } => generate_completions(shell),
+        Commands::Info { fmu_file } => info::show_fmu_info(fmu_file),
+        Commands::List { fmu_file } => list_fmu_contents(fmu_file),
+        Commands::Validate { fmu_file } => validate::validate_fmu(fmu_file),
         Commands::Simulate(args) => simulate::simulate_fmu(args),
-        Commands::SimulateConfig(args) => simulate::simulate_config(args),
+        Commands::SimulateConfig { config_file } => simulate::simulate_config(config_file),
         Commands::Build(args) => build::build_platform_binary(args),
     };
 
@@ -309,6 +291,28 @@ fn main() -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+fn generate_completions(shell: &ShellArg) -> Result<(), Box<dyn Error + 'static>> {
+    let target_shell = match shell {
+        ShellArg::Bash => Shell::Bash,
+        ShellArg::Zsh => Shell::Zsh,
+        ShellArg::Fish => Shell::Fish,
+        ShellArg::PowerShell => Shell::PowerShell,
+        ShellArg::Elvish => Shell::Elvish,
+    };
+    let mut cmd = Cli::command();
+    let bin_name = cmd.get_name().to_string();
+    clap_complete::generate(target_shell, &mut cmd, bin_name, &mut io::stdout());
+    Ok(())
+}
+
+fn list_fmu_contents(fmu_file: &str) -> Result<(), Box<dyn Error>> {
+    get_zip_contents(fmu_file)
+        .map_err(|e| format!("Failed to list FMU archive contents: {e}"))?
+        .iter()
+        .for_each(|entry| println!("{entry}"));
+    Ok(())
 }
 
 /// Common logic to extract an FMU and the detect its FMI major version

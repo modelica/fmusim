@@ -2,7 +2,7 @@ use std::fs::read_to_string;
 
 use fmi_rs::model_description::{DefaultExperiment, FMIMajorVersion};
 
-use crate::{SimulateArgs, SimulateConfigArgs, prepare_fmu};
+use crate::{SimulateArgs, prepare_fmu};
 
 pub mod fmi2;
 pub mod fmi3;
@@ -98,12 +98,12 @@ pub fn simulate_fmu(args: &SimulateArgs) -> Result<(), Box<dyn std::error::Error
     result
 }
 
-pub fn simulate_config(args: &SimulateConfigArgs) -> Result<(), Box<dyn std::error::Error>> {
-    let content = read_to_string(&args.config_path)
-        .map_err(|e| format!("Failed to read config file {}: {e}", &args.config_path))?;
+pub fn simulate_config(config_file: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let content = read_to_string(config_file)
+        .map_err(|e| format!("Failed to read config file {}: {e}", config_file))?;
 
     let toml_args = toml::from_str::<SimulateArgs>(&content)
-        .map_err(|e| format!("Failed to parse config file {}: {e}", &args.config_path))?;
+        .map_err(|e| format!("Failed to parse config file {}: {e}", config_file))?;
 
     simulate_fmu(&toml_args)
 }

@@ -4,7 +4,7 @@ use colored::Colorize;
 use fmi_rs::{model_description::FMIMajorVersion, util::get_zip_contents};
 use fmi_rs_libxml2::validate_model_description_against_xsd;
 
-use crate::{ValidateArgs, prepare_fmu};
+use crate::prepare_fmu;
 
 /// Validate ZIP archive
 fn validate_zip_archive(fmu_file: &str) -> Vec<String> {
@@ -28,14 +28,14 @@ fn validate_zip_archive(fmu_file: &str) -> Vec<String> {
     problems
 }
 
-pub fn validate_fmu(args: &ValidateArgs) -> Result<(), Box<dyn std::error::Error>> {
+pub fn validate_fmu(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", "    Validating ZIP archive".green().bold());
 
-    for problem in validate_zip_archive(&args.fmu_file) {
+    for problem in validate_zip_archive(fmu_file) {
         println!("{}: {}", "error".red().bold(), problem);
     }
 
-    let (_unzipdir, xml_path, fmi_major_version) = prepare_fmu(&args.fmu_file)?;
+    let (_unzipdir, xml_path, fmi_major_version) = prepare_fmu(fmu_file)?;
 
     println!("{}", "    Validating model description".green().bold());
 

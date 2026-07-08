@@ -1,10 +1,10 @@
 use colored::Colorize;
 use fmi_rs::model_description::FMIMajorVersion;
 
-use crate::{InfoArgs, prepare_fmu};
+use crate::prepare_fmu;
 
-pub fn show_fmu_info(args: &InfoArgs) -> Result<(), Box<dyn std::error::Error>> {
-    let (unzipdir, xml_path, fmi_major_version) = prepare_fmu(&args.fmu_file)?;
+pub fn show_fmu_info(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let (unzipdir, xml_path, fmi_major_version) = prepare_fmu(fmu_file)?;
 
     let entries = std::fs::read_dir(unzipdir.path().join("binaries"))?;
 
