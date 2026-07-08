@@ -34,8 +34,12 @@ Usage: fmusim <COMMAND>
 
 Commands:
   info      Display information about an FMU
+  list      List the files contained in an FMU archive
+  pack      Create an FMU archive from a folder
+  unpack    Unpack an FMU archive to a folder
   validate  Validate an FMU
   simulate  Simulate an FMU
+  build     Build the platform binary for an FMU with CMake
   help      Print this message or the help of the given subcommand(s)
 
 Options:
