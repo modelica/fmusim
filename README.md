@@ -140,6 +140,9 @@ See [simulate](simluate.md) to learn more.
 
 ## Build the platform binary for an FMU
 
+Build the platform binary for a source code FMU.
+This requires [CMake](https://cmake.org/) and a supported compiler to be installed.
+
 ```console
 fmusim build BouncingBall.fmu  
 Creating CMake project
