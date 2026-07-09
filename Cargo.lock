@@ -701,7 +701,7 @@ dependencies = [
 
 [[package]]
 name = "fmi-rs"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "approx",
  "askama 0.16.0",
@@ -722,21 +722,21 @@ dependencies = [
 
 [[package]]
 name = "fmi-rs-libxml2"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "cc",
 ]
 
 [[package]]
 name = "fmi-rs-sundials"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "fmi-rs",
 ]
 
 [[package]]
 name = "fmusim"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "clap",
  "clap_complete",
