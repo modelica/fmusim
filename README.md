@@ -53,11 +53,6 @@ To check the installed version:
 $ fmusim --version
 ```
 
-### Open an issue on GitHub
-
-The [issue tracker](https://github.com/modelica/fmusim/issues) on GitHub is a good place to report bugs and request features.
-Make sure to search for similar issues first, as it is common for someone else to encounter the same problem.
-
 ## Display information about an FMU
 
 ```console
@@ -102,20 +97,6 @@ documentation/index.html
 documentation/result.svg
 modelDescription.xml
 ...
-```
-
-## Pack and unpack an FMU
-
-Unpack the contents of an FMU archive to a directory
-
-```console
-$ fmusim unpack BouncingBall.fmu BouncingBall
-```
-
-Create an FMU archive from a directory
-
-```console
-$ fmusim pack BouncingBall BouncingBall.fmu
 ```
 
 ## Validate an FMU
