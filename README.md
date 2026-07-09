@@ -144,7 +144,7 @@ Build the platform binary for a source code FMU.
 This requires [CMake](https://cmake.org/) and a supported compiler to be installed.
 
 ```console
-fmusim build BouncingBall.fmu  
+$ fmusim build BouncingBall.fmu  
 Creating CMake project
 Configuring CMake project
 ...
