@@ -99,13 +99,6 @@ pub enum ShellArg {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    /// Generate shell completion scripts
-    #[command(hide = true)]
-    Completion {
-        /// The shell to generate completions for
-        #[arg(value_enum)]
-        shell: ShellArg,
-    },
     /// Display information about an FMU
     Info {
         /// Path to the FMU file
@@ -113,25 +106,6 @@ enum Commands {
     },
     /// List the files contained in an FMU archive
     List {
-        /// Path to the FMU file
-        fmu_file: String,
-    },
-    /// Create an FMU archive from a folder
-    Pack {
-        /// Path to the unpacked FMU
-        source_dir: String,
-        /// Path to the FMU file to create
-        fmu_file: String,
-    },
-    /// Unpack an FMU archive to a folder
-    Unpack {
-        /// Path to the FMU file to unpack
-        fmu_file: String,
-        /// Path to the directory to unpack the FMU to
-        target_dir: String,
-    },
-    /// Validate an FMU
-    Validate {
         /// Path to the FMU file
         fmu_file: String,
     },
@@ -150,8 +124,36 @@ enum Commands {
         /// Path to the configuration file
         config_file: String,
     },
+    /// Validate an FMU
+    Validate {
+        /// Path to the FMU file
+        fmu_file: String,
+    },
     /// Build the platform binary for an FMU with CMake
     Build(BuildArgs),
+    /// Create an FMU archive from a folder
+    #[command(hide = true)]
+    Pack {
+        /// Path to the unpacked FMU
+        source_dir: String,
+        /// Path to the FMU file to create
+        fmu_file: String,
+    },
+    /// Unpack an FMU archive to a folder
+    #[command(hide = true)]
+    Unpack {
+        /// Path to the FMU file to unpack
+        fmu_file: String,
+        /// Path to the directory to unpack the FMU to
+        target_dir: String,
+    },
+    /// Generate shell completion scripts
+    #[command(hide = true)]
+    Completion {
+        /// The shell to generate completions for
+        #[arg(value_enum)]
+        shell: ShellArg,
+    },
 }
 
 #[derive(Debug, Args, Deserialize, Clone, Default)]

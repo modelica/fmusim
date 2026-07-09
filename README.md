@@ -115,7 +115,7 @@ Simulate an FMU with the default settings and plot the outputs
 $ fmusim simulate BoucingBall.fmu --show-plot
 ```
 
-![BoucingBall](docs/plot.svg)
+![BoucingBall](docs/assets/plot.svg)
 
 See [simulate](simluate.md) to learn more.
 

@@ -24,3 +24,6 @@ fmusim/tests/resources/Reference-FMUs/
 
 # Folder for testing
 playground/
+
+# Mkdocs output
+site/

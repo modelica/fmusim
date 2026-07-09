@@ -1,0 +1,37 @@
+:root {
+  --ma-blue: #1f75b7;
+  --ma-red: #BD0023;
+  --ma-dark-blue: #004478;
+}
+
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--ma-dark-blue);
+  --md-typeset-a-color: var(--ma-blue);
+  --md-accent-fg-color: var(--ma-red);
+  .md-typeset .admonition.tip,.md-typeset details.tip {
+      border-color: #1f75b7;
+  }
+  .md-typeset .tip>.admonition-title,.md-typeset .tip>summary {
+      background-color: #1f75b71a
+  }
+  .md-typeset .tip>.admonition-title:before,.md-typeset .tip>summary:before {
+    background-color: #1f75b7;
+  }
+}
+
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #212529;
+  --md-default-fg-color: #dee2e6;
+  --md-primary-fg-color: var(--ma-dark-blue);
+  --md-typeset-a-color: var(--ma-blue);
+  --md-accent-fg-color: var(--ma-red);
+  .md-typeset .admonition.tip,.md-typeset details.tip {
+      border-color: #1f75b7;
+  }
+  .md-typeset .tip>.admonition-title,.md-typeset .tip>summary {
+      background-color: #1f75b71a
+  }
+  .md-typeset .tip>.admonition-title:before,.md-typeset .tip>summary:before {
+    background-color: #1f75b7;
+  }
+}
