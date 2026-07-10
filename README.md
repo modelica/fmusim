@@ -25,7 +25,7 @@ curl -LsSf https://raw.githubusercontent.com/modelica/fmusim/refs/heads/main/ins
 powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/modelica/fmusim/refs/heads/main/install.ps1 | iex"
 ```
 
-To try out fmusim you can download the [latest release](https://github.com/modelica/Reference-FMUs/releases/latest) of the Reference FMUs.
+To try out fmusim you can download the [latest release](https://github.com/modelica/Reference-FMUs/releases/latest/download/Reference-FMUs.zip) of the Reference FMUs.
 
 ## Getting help
 
