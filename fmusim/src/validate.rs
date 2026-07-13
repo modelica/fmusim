@@ -1,6 +1,7 @@
 use std::vec;
 
-use colored::Colorize;
+use anstream::eprintln;
+use anstyle::Style;
 use fmi_rs::{model_description::FMIMajorVersion, zip::get_zip_contents};
 use fmi_rs_libxml2::validate_model_description_against_xsd;
 
@@ -29,20 +30,33 @@ fn validate_zip_archive(fmu_file: &str) -> Vec<String> {
 }
 
 pub fn validate_fmu(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
-    println!("{}", "    Validating ZIP archive".green().bold());
+    let bold = Style::new().bold();
+    let red = Style::new()
+        .bold()
+        .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
+    let green = Style::new()
+        .bold()
+        .fg_color(Some(anstyle::AnsiColor::BrightGreen.into()));
+    let arrow = Style::new()
+        .bold()
+        .fg_color(Some(anstyle::AnsiColor::Cyan.into()));
 
-    for problem in validate_zip_archive(fmu_file) {
-        println!("{}: {}", "error".red().bold(), problem);
+    eprintln!("    {green}Validating ZIP archive{green:#}");
+
+    let problems = validate_zip_archive(fmu_file);
+
+    for problem in problems {
+        eprintln!("{red}error{red:#}: {problem}");
     }
 
     let (_unzipdir, xml_path, fmi_major_version) = prepare_fmu(fmu_file)?;
 
-    println!("{}", "    Validating model description".green().bold());
+    eprintln!("    {green}Validating model description{green:#}");
 
     let problems = validate_model_description_against_xsd(&xml_path, fmi_major_version as i32);
 
-    for problem in problems.iter() {
-        println!("{}: {}", "error".red().bold(), problem);
+    for problem in problems {
+        eprintln!("{red}error{red:#}: {problem}");
     }
 
     let text = std::fs::read_to_string(xml_path)
@@ -80,15 +94,13 @@ pub fn validate_fmu(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
     let max_width = terminal_width - 8;
 
     for problem in problems.iter() {
-        println!("{}: {}", "error".red().bold(), problem.message.bold());
+        eprintln!("{red}error{red:#}: {bold}{}{bold:#}", problem.message);
 
         if let Some(range) = problem.range.last() {
             let start_pos = doc.text_pos_at(range.start);
-            println!(
-                "     {} modelDescription.xml:{}:{}",
-                "-->".cyan().bold(),
-                start_pos.row,
-                start_pos.col
+            eprintln!(
+                "     {arrow}-->{arrow:#} modelDescription.xml:{}:{}",
+                start_pos.row, start_pos.col
             );
         }
 
@@ -99,33 +111,29 @@ pub fn validate_fmu(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
             let end_line = (end_pos.row - 1) as usize;
 
             if j == 0 {
-                println!("      {}", "|".cyan().bold());
+                eprintln!("      {arrow}|{arrow:#}");
             } else {
-                println!("  {}", "...".cyan().bold());
+                eprintln!("  {arrow}...{arrow:#}");
             }
 
             for (i, line) in text.lines().enumerate() {
                 if i >= start_line && i <= end_line {
                     let text = if line.len() > max_width {
                         let limit = max_width.saturating_sub(3);
-                        format!("{line:.limit$}{}", "...".cyan().bold())
+                        format!("{line:.limit$}{arrow}...{arrow:#}")
                     } else {
                         line.to_string()
                     };
 
                     let prefix = if i == start_line {
-                        format!(
-                            "{:>5} {} ",
-                            (i + 1).to_string().cyan().bold(),
-                            "|".cyan().bold()
-                        )
+                        format!("{arrow}{:>5}{arrow:#} {arrow}|{arrow:#} ", i + 1)
                     } else {
-                        format!("      {} ", "|".cyan().bold())
+                        format!("      {arrow}|{arrow:#} ")
                     };
-                    println!("{}{}", prefix, text);
+                    eprintln!("{}{}", prefix, text);
                 }
             }
-            println!("      {}", "|".cyan().bold());
+            eprintln!("      {arrow}|{arrow:#}");
         }
     }
 

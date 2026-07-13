@@ -1,9 +1,39 @@
-use colored::Colorize;
-use fmi_rs::model_description::FMIMajorVersion;
-
 use crate::prepare_fmu;
+use anstream::println;
+use anstyle::Style;
+use fmi_rs::model_description::FMIMajorVersion;
+use std::io::{self, IsTerminal};
+
+struct GridStyle {
+    horizontal: &'static str,
+    cross: &'static str,
+    vertical: &'static str,
+}
+
+impl GridStyle {
+    fn detect() -> Self {
+        // Check if stdout is connected to a real terminal
+        if io::stdout().is_terminal() {
+            // Fancy Unicode for terminal display
+            Self {
+                horizontal: "─",
+                cross: "┼",
+                vertical: "│",
+            }
+        } else {
+            // Safe ASCII fallback for files / pipes / redirects
+            Self {
+                horizontal: "-",
+                cross: "+",
+                vertical: "|",
+            }
+        }
+    }
+}
 
 pub fn show_fmu_info(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let grid = GridStyle::detect();
+
     let (unzipdir, xml_path, fmi_major_version) = prepare_fmu(fmu_file)?;
 
     let entries = std::fs::read_dir(unzipdir.path().join("binaries"))?;
@@ -21,15 +51,28 @@ pub fn show_fmu_info(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
             .filter_map(|entry| entry.file_name().into_string().ok()),
     );
 
+    let bold = Style::new().bold();
+
     match fmi_major_version {
         FMIMajorVersion::V2 => {
             let model_description =
                 fmi_rs::model_description::fmi2::ModelDescription::from_path(&xml_path)
                     .map_err(|e| format!("Failed to read model description: {e}"))?;
 
-            println!("{}", "Model Information".bold());
+            let mut interface_types = vec![];
+
+            if model_description.modelExchange.is_some() {
+                interface_types.push("Model Exchange");
+            }
+
+            if model_description.coSimulation.is_some() {
+                interface_types.push("Co-Simulation");
+            }
+
+            println!("{bold}Model Information{bold:#}");
             println!();
             println!("FMI Version:       2.0");
+            println!("Interface Types:   {}", interface_types.join(", "));
             println!("Model Name:        {}", model_description.modelName);
             println!("Platforms:         {}", platform_dirs.join(", "));
             println!("Continuous States: {}", model_description.derivatives.len());
@@ -54,7 +97,7 @@ pub fn show_fmu_info(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
                 model_description.description.unwrap_or_default()
             );
             println!();
-            println!("{}", "Model Variables".bold());
+            println!("{bold}Model Variables{bold:#}");
             println!();
 
             let terminal_width = term_size::dimensions().map(|(w, _)| w).unwrap_or(120);
@@ -69,18 +112,20 @@ pub fn show_fmu_info(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
             let description_width = terminal_width.saturating_sub(name_width + 3);
 
             let header = format!(
-                "{:<nw$} │ {:<dw$}",
-                "Name".bold(),
-                "Description".bold(),
+                "{bold}{:<nw$}{bold:#} {} {bold}{:<dw$}{bold:#}",
+                "Name",
+                grid.vertical,
+                "Description",
                 nw = name_width,
                 dw = description_width
             );
             println!("{}", header);
 
             println!(
-                "{}─┼─{}",
-                "─".repeat(name_width),
-                "─".repeat(description_width)
+                "{}{}{}",
+                grid.horizontal.repeat(name_width + 1),
+                grid.cross,
+                grid.horizontal.repeat(description_width + 1)
             );
 
             for variable in &model_description.modelVariables {
@@ -98,9 +143,24 @@ pub fn show_fmu_info(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
                 fmi_rs::model_description::fmi3::ModelDescription::from_path(&xml_path)
                     .map_err(|e| format!("Failed to read model description: {e}"))?;
 
-            println!("{}", "Model Information".bold());
+            let mut interface_types = vec![];
+
+            if model_description.modelExchange.is_some() {
+                interface_types.push("Model Exchange");
+            }
+
+            if model_description.coSimulation.is_some() {
+                interface_types.push("Co-Simulation");
+            }
+
+            if model_description.scheduledExecution.is_some() {
+                interface_types.push("Scheduled Execution");
+            }
+
+            println!("{bold}Model Information{bold:#}");
             println!();
             println!("FMI Version:       {}", model_description.fmiVersion);
+            println!("Interface Types:   {}", interface_types.join(", "));
             println!("Model Name:        {}", model_description.modelName);
             println!("Platforms:         {}", platform_dirs.join(", "));
             println!("Continuous States: {}", model_description.derivatives.len());
@@ -125,7 +185,7 @@ pub fn show_fmu_info(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
                 model_description.description.unwrap_or_default()
             );
             println!();
-            println!("{}", "Model Variables".bold());
+            println!("{bold}Model Variables{bold:#}");
             println!();
 
             let terminal_width = term_size::dimensions().map(|(w, _)| w).unwrap_or(120);
@@ -140,24 +200,27 @@ pub fn show_fmu_info(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
             let description_width = terminal_width.saturating_sub(name_width + 3);
 
             let header = format!(
-                "{:<nw$} │ {:<dw$}",
-                "Name".bold(),
-                "Description".bold(),
+                "{bold}{:<nw$}{bold:#} {} {bold}{:<dw$}{bold:#}",
+                "Name",
+                grid.vertical,
+                "Description",
                 nw = name_width,
                 dw = description_width
             );
             println!("{}", header);
 
             println!(
-                "{}─┼─{}",
-                "─".repeat(name_width),
-                "─".repeat(description_width)
+                "{}{}{}",
+                grid.horizontal.repeat(name_width + 1),
+                grid.cross,
+                grid.horizontal.repeat(description_width + 1)
             );
 
             for variable in &model_description.modelVariables {
                 println!(
-                    "{:<nw$} │ {:<dw$}",
+                    "{:<nw$} {} {:<dw$}",
                     variable.name,
+                    grid.vertical,
                     variable.description.as_deref().unwrap_or_default(),
                     nw = name_width,
                     dw = description_width

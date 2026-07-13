@@ -4,23 +4,24 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-libloading = "0.9.0"
+anstream = "1.0.0"
+anstyle = "1.0.14"
 clap = { version = "4.6.1", features = ["derive"] }
 clap_complete = "4.6.5"
+csv = "1.4.0"
 crash-handler = "0.7"
 fmi-rs = { path = "../fmi-rs/fmi-rs" }
-fmi-rs-sundials = { path = "../fmi-rs/fmi-rs-sundials" }
 fmi-rs-libxml2 = { path = "../fmi-rs/fmi-rs-libxml2" }
-zip = "8.6"
-tempfile = "3.27"
-csv = "1.4.0"
-colored = "3.1.1"
+fmi-rs-sundials = { path = "../fmi-rs/fmi-rs-sundials" }
+libloading = "0.9.0"
 plotly = "0.14.1"
-serde = { version = "1.0", features = ["derive"] }
-term_size = "0.3"
-toml = "1.1"
 roxmltree = "0.21.1"
+serde = { version = "1.0", features = ["derive"] }
+toml = "1.1"
+tempfile = "3.27"
+term_size = "0.3"
+zip = "8.6"
 
 [dev-dependencies]
-rstest = "0.26.1"
 fmi-rs = { path = "../fmi-rs/fmi-rs", features = ["test-fixtures"] }
+rstest = "0.26.1"

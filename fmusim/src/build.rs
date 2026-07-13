@@ -1,13 +1,18 @@
 use std::path::{Path, PathBuf};
 
 use crate::BuildArgs;
-use colored::Colorize;
+use anstream::{eprintln, println};
+use anstyle::Style;
 use fmi_rs::util::create_cmake_project;
 use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
 use tempfile::TempDir;
 
 pub fn build_platform_binary(args: &BuildArgs) -> Result<(), Box<dyn std::error::Error>> {
+    let green = Style::new()
+        .bold()
+        .fg_color(Some(anstyle::AnsiColor::BrightGreen.into()));
+
     let (project_path, _temp_dir) = if let Some(ref path) = args.project_path {
         (PathBuf::from(path), None)
     } else {
@@ -16,11 +21,11 @@ pub fn build_platform_binary(args: &BuildArgs) -> Result<(), Box<dyn std::error:
         (temp_dir.path().to_path_buf(), Some(temp_dir))
     };
 
-    eprintln!("{}", "Creating CMake project".bright_green().bold());
+    eprintln!("{green}Creating CMake project{green:#}");
 
     create_cmake_project(Path::new(&args.fmu_file), project_path.as_path())?;
 
-    eprintln!("{}", "Configuring CMake project".bright_green().bold());
+    eprintln!("{green}Configuring CMake project{green:#}");
 
     let build_path = project_path
         .join("build")
@@ -57,7 +62,7 @@ pub fn build_platform_binary(args: &BuildArgs) -> Result<(), Box<dyn std::error:
 
     run_command_with_progress(&mut command)?;
 
-    eprintln!("{}", "Building CMake project".bright_green().bold());
+    eprintln!("{green}Building CMake project{green:#}");
 
     let mut command = Command::new("cmake");
 
@@ -71,7 +76,7 @@ pub fn build_platform_binary(args: &BuildArgs) -> Result<(), Box<dyn std::error:
 
     run_command_with_progress(&mut command)?;
 
-    eprintln!("{}", "Finished".bright_green().bold());
+    eprintln!("{green}Finished{green:#}");
 
     Ok(())
 }

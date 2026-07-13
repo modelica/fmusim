@@ -738,9 +738,10 @@ dependencies = [
 name = "fmusim"
 version = "0.4.0"
 dependencies = [
+ "anstream",
+ "anstyle",
  "clap",
  "clap_complete",
- "colored",
  "crash-handler",
  "csv",
  "fmi-rs",

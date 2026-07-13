@@ -4,9 +4,10 @@ mod info;
 mod simulate;
 mod validate;
 
+use anstream::{eprintln, println};
+use anstyle::Style;
 use clap::{Args, CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
-use colored::Colorize;
 use crash_handler::{CrashEventResult, CrashHandler, make_crash_event};
 use fmi_rs::{
     model_description::{FMIMajorVersion, peek_fmi_major_version},
@@ -49,12 +50,36 @@ fn parse_start_value(s: &str) -> Result<(String, String), String> {
     Ok((parts[0].to_string(), parts[1].to_string()))
 }
 
+fn get_styles() -> clap::builder::Styles {
+    clap::builder::Styles::styled()
+        .header(
+            anstyle::Style::new()
+                .bold()
+                .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::BrightGreen))),
+        )
+        .usage(
+            anstyle::Style::new()
+                .bold()
+                .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::BrightGreen))),
+        )
+        .literal(
+            anstyle::Style::new()
+                .bold()
+                .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::BrightCyan))),
+        )
+        .placeholder(
+            anstyle::Style::new()
+                .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::BrightCyan))),
+        )
+}
+
 #[derive(Parser, Debug)]
 #[command(
     name = "fmusim",
     version,
     propagate_version = true,
-    about = "Simulate and validate Functional Mock-up Units"
+    about = "Work with Functional Mock-up Units",
+    styles = get_styles(),
 )]
 struct Cli {
     /// Path to the FMU file
@@ -306,10 +331,14 @@ fn main() -> ExitCode {
         Commands::Build(args) => build::build_platform_binary(args),
     };
 
+    let red = Style::new()
+        .bold()
+        .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
+
     match result {
         Ok(_) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("{}: {}", "error".bright_red().bold(), e);
+            eprintln!("{red}error{red:#}: {e}");
             ExitCode::FAILURE
         }
     }
