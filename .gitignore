@@ -21,3 +21,6 @@ rustc-ice-*.txt
 
 # Downloaded test resources
 fmusim/tests/resources/Reference-FMUs/
+
+# Folder for testing
+playground/
