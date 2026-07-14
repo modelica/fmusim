@@ -4,7 +4,7 @@ use crate::BuildArgs;
 use anstream::{eprintln, println};
 use anstyle::Style;
 use anyhow::{self, Context};
-use fmi_rs::util::create_cmake_project;
+use fmi_rs::cmake::create_cmake_project;
 use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
 use tempfile::TempDir;

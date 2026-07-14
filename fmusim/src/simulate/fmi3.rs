@@ -102,7 +102,8 @@ pub fn simulate_fmu(
     };
 
     let input = if let Some(path) = &args.input_file {
-        let file = File::open(path).with_context(|| format!("Failed to read input file '{path}'"))?;
+        let file =
+            File::open(path).with_context(|| format!("Failed to read input file '{path}'"))?;
         let trajectories = fmi_rs::sim::fmi3::csv::read_csv(&file, settings.model_description)
             .with_context(|| format!("Failed to parse input file '{path}'"))?;
         Some(fmi_rs::sim::fmi3::input::StaticInput::new(trajectories))
@@ -144,7 +145,8 @@ pub fn simulate_fmu(
 
     if args.show_plot {
         let ref_trajectories = if let Some(path) = &args.reference_file {
-            let reader = File::open(path).with_context(|| format!("Failed to read reference file '{path}'"))?;
+            let reader = File::open(path)
+                .with_context(|| format!("Failed to read reference file '{path}'"))?;
             let trajectories = read_csv(reader, &model_description)
                 .with_context(|| format!("Failed to parse reference file '{path}'"))?;
             Some(trajectories)
