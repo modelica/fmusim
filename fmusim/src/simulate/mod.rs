@@ -75,9 +75,9 @@ pub fn calculate_simulation_steps(
     (start_time, stop_time, tolerance, output_interval)
 }
 
-pub fn simulate_fmu(args: &SimulateArgs) -> Result<(), Box<dyn std::error::Error>> {
+pub fn simulate_fmu(args: &SimulateArgs) -> anyhow::Result<()> {
     if args.fmu_file.is_empty() {
-        return Err("No FMU file specified.".into());
+        return Err(anyhow::anyhow!("No FMU file specified."));
     }
 
     let (unzipdir, xml_path, fmi_major_version) = prepare_fmu(&args.fmu_file)?;
@@ -95,15 +95,13 @@ pub fn simulate_fmu(args: &SimulateArgs) -> Result<(), Box<dyn std::error::Error
         eprintln!("Simulation took {:.2?}.", elapsed_time);
     }
 
-    result
+    result?;
+
+    Ok(())
 }
 
-pub fn simulate_config(config_file: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let content = read_to_string(config_file)
-        .map_err(|e| format!("Failed to read config file {}: {e}", config_file))?;
-
-    let toml_args = toml::from_str::<SimulateArgs>(&content)
-        .map_err(|e| format!("Failed to parse config file {}: {e}", config_file))?;
-
+pub fn simulate_config(config_file: &str) -> anyhow::Result<()> {
+    let content = read_to_string(config_file)?;
+    let toml_args = toml::from_str::<SimulateArgs>(&content)?;
     simulate_fmu(&toml_args)
 }

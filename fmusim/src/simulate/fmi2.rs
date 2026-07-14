@@ -22,7 +22,7 @@ pub fn simulate_fmu(
     args: &SimulateArgs,
     unzipdir: &tempfile::TempDir,
     xml_path: &Path,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> anyhow::Result<()> {
     let model_description = fmi_rs::model_description::fmi2::ModelDescription::from_path(xml_path)?;
 
     let output_variables: Vec<&fmi_rs::model_description::fmi2::ScalarVariable> =
@@ -46,10 +46,9 @@ pub fn simulate_fmu(
                 if let Some(&variable) = variable_map.get(variable_name.as_str()) {
                     output_variables.push(variable);
                 } else {
-                    return Err(format!(
+                    return Err(anyhow::anyhow!(
                         "The requested output variable {variable_name:?} does not exist."
-                    )
-                    .into());
+                    ));
                 }
             }
 
@@ -93,10 +92,8 @@ pub fn simulate_fmu(
     };
 
     let input = if let Some(path) = &args.input_file {
-        let file =
-            File::open(path).map_err(|e| format!("Failed to open input file '{}': {}", path, e))?;
-        let trajectories = fmi_rs::sim::fmi2::csv::read_csv(&file, settings.model_description)
-            .map_err(|e| format!("Failed to read input CSV '{}': {}", path, e))?;
+        let file = File::open(path)?;
+        let trajectories = fmi_rs::sim::fmi2::csv::read_csv(&file, settings.model_description)?;
         Some(fmi_rs::sim::fmi2::input::StaticInput::new(trajectories))
     } else {
         None
@@ -135,12 +132,8 @@ pub fn simulate_fmu(
 
     if args.show_plot {
         let reference = if let Some(path) = &args.reference_file {
-            let reader = File::open(path)
-                .map_err(|e| format!("Failed to open reference file '{}': {}", path, e))?;
-            Some(
-                read_csv(reader, &model_description)
-                    .map_err(|e| format!("Failed to parse reference file '{}': {}", path, e))?,
-            )
+            let reader = File::open(path)?;
+            Some(read_csv(reader, &model_description)?)
         } else {
             None
         };
@@ -166,7 +159,9 @@ pub fn simulate_fmu(
         plot.show_html(path);
     }
 
-    result
+    result?;
+
+    Ok(())
 }
 
 pub fn plot_result(

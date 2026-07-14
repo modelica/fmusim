@@ -320,12 +320,8 @@ fn main() -> ExitCode {
         } => extract_zip_archive(fmu_file, target_dir)
             .with_context(|| format!("Failed to extract FMU archive {fmu_file} to {target_dir}")),
         Commands::Validate { fmu_file } => validate::validate_fmu(fmu_file),
-        Commands::Simulate(args) => {
-            simulate::simulate_fmu(args).map_err(|e| anyhow::anyhow!("{e}"))
-        }
-        Commands::SimulateConfig { config_file } => {
-            simulate::simulate_config(config_file).map_err(|e| anyhow::anyhow!("{e}"))
-        }
+        Commands::Simulate(args) => simulate::simulate_fmu(args),
+        Commands::SimulateConfig { config_file } => simulate::simulate_config(config_file),
         Commands::Build(args) => build::build_platform_binary(args),
     };
 
