@@ -4,6 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use anyhow::Context;
 use fmi_rs::{
     model_description::fmi3::{TypeDefinition, VariableType},
     sim::{
@@ -136,7 +137,8 @@ pub fn simulate_fmu(
     };
 
     if let Some(output_file) = args.output_file.as_ref() {
-        fmi_rs::sim::fmi3::csv::write_csv(&trajectories, output_file)?;
+        fmi_rs::sim::fmi3::csv::write_csv(&trajectories, output_file)
+            .with_context(|| format!("Failed to write '{}'", output_file))?;
     }
 
     if args.show_plot {

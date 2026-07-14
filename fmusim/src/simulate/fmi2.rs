@@ -1,7 +1,6 @@
-use std::collections::HashMap;
-use std::fs::File;
-use std::path::{Path, PathBuf};
-
+use crate::simulate::calculate_simulation_steps;
+use crate::{InterfaceType, SimulateArgs, SolverType};
+use anyhow::Context;
 use fmi_rs::model_description::fmi2::{SimpleType, Variability, VariableType};
 use fmi_rs::sim::euler::ForwardEulerFactory;
 use fmi_rs::sim::fmi2::Trajectories;
@@ -14,9 +13,9 @@ use plotly::{
     common::{Fill, Line, LineShape, Mode},
     layout::{Axis, GridPattern, LayoutGrid, Margin, Shape, ShapeLayer, ShapeLine, ShapeType},
 };
-
-use crate::simulate::calculate_simulation_steps;
-use crate::{InterfaceType, SimulateArgs, SolverType};
+use std::collections::HashMap;
+use std::fs::File;
+use std::path::{Path, PathBuf};
 
 pub fn simulate_fmu(
     args: &SimulateArgs,
@@ -127,7 +126,8 @@ pub fn simulate_fmu(
     };
 
     if let Some(output_file) = args.output_file.as_ref() {
-        fmi_rs::sim::fmi2::csv::write_csv(&trajectories, output_file)?;
+        fmi_rs::sim::fmi2::csv::write_csv(&trajectories, output_file)
+            .with_context(|| format!("Failed to write '{}'", output_file))?;
     }
 
     if args.show_plot {
