@@ -88,6 +88,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.103"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
+
+[[package]]
 name = "approx"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -716,6 +722,7 @@ dependencies = [
  "rstest",
  "serde",
  "tempfile",
+ "thiserror",
  "url",
  "zip",
 ]
@@ -740,6 +747,7 @@ version = "0.4.0"
 dependencies = [
  "anstream",
  "anstyle",
+ "anyhow",
  "clap",
  "clap_complete",
  "crash-handler",

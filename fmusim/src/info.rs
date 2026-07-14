@@ -1,6 +1,7 @@
 use crate::prepare_fmu;
 use anstream::println;
 use anstyle::Style;
+use anyhow::Context;
 use fmi_rs::model_description::FMIMajorVersion;
 use std::io::{self, IsTerminal};
 
@@ -31,7 +32,7 @@ impl GridStyle {
     }
 }
 
-pub fn show_fmu_info(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn show_fmu_info(fmu_file: &str) -> anyhow::Result<()> {
     let grid = GridStyle::detect();
 
     let (unzipdir, xml_path, fmi_major_version) = prepare_fmu(fmu_file)?;
@@ -57,7 +58,7 @@ pub fn show_fmu_info(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
         FMIMajorVersion::V2 => {
             let model_description =
                 fmi_rs::model_description::fmi2::ModelDescription::from_path(&xml_path)
-                    .map_err(|e| format!("Failed to read model description: {e}"))?;
+                    .context("Failed to read model description")?;
 
             let mut interface_types = vec![];
 
@@ -141,7 +142,7 @@ pub fn show_fmu_info(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
         FMIMajorVersion::V3 => {
             let model_description =
                 fmi_rs::model_description::fmi3::ModelDescription::from_path(&xml_path)
-                    .map_err(|e| format!("Failed to read model description: {e}"))?;
+                    .context("Failed to read model description")?;
 
             let mut interface_types = vec![];
 

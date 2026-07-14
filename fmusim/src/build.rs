@@ -3,12 +3,13 @@ use std::path::{Path, PathBuf};
 use crate::BuildArgs;
 use anstream::{eprintln, println};
 use anstyle::Style;
+use anyhow::{self, Context};
 use fmi_rs::util::create_cmake_project;
 use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
 use tempfile::TempDir;
 
-pub fn build_platform_binary(args: &BuildArgs) -> Result<(), Box<dyn std::error::Error>> {
+pub fn build_platform_binary(args: &BuildArgs) -> anyhow::Result<()> {
     let green = Style::new()
         .bold()
         .fg_color(Some(anstyle::AnsiColor::BrightGreen.into()));
@@ -16,8 +17,7 @@ pub fn build_platform_binary(args: &BuildArgs) -> Result<(), Box<dyn std::error:
     let (project_path, _temp_dir) = if let Some(ref path) = args.project_path {
         (PathBuf::from(path), None)
     } else {
-        let temp_dir =
-            TempDir::new().map_err(|e| format!("Failed to create temporary directory: {e}"))?;
+        let temp_dir = TempDir::new().context("Failed to create temporary directory")?;
         (temp_dir.path().to_path_buf(), Some(temp_dir))
     };
 
@@ -82,13 +82,13 @@ pub fn build_platform_binary(args: &BuildArgs) -> Result<(), Box<dyn std::error:
 }
 
 /// Runs a command, streams its output to the terminal
-fn run_command_with_progress(cmd: &mut Command) -> Result<(), Box<dyn std::error::Error>> {
+fn run_command_with_progress(cmd: &mut Command) -> anyhow::Result<()> {
     cmd.stdout(Stdio::piped());
     cmd.stderr(Stdio::piped());
 
     let mut child = cmd
         .spawn()
-        .map_err(|e| format!("Failed to start {:?}: {}", cmd.get_program(), e))?;
+        .with_context(|| format!("Failed to start {:?}", cmd.get_program()))?;
 
     if let Some(stdout) = child.stdout.take() {
         let reader = BufReader::new(stdout);
@@ -102,9 +102,9 @@ fn run_command_with_progress(cmd: &mut Command) -> Result<(), Box<dyn std::error
             if status.success() {
                 Ok(())
             } else {
-                Err(format!("{:?} failed with status {}", cmd.get_program(), status).into())
+                anyhow::bail!("{:?} failed with status {}", cmd.get_program(), status)
             }
         }
-        Err(e) => Err(format!("{:?} failed: {}", cmd.get_program(), e).into()),
+        Err(e) => anyhow::bail!("{:?} failed: {}", cmd.get_program(), e),
     }
 }

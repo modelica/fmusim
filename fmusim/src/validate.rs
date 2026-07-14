@@ -2,12 +2,13 @@ use std::vec;
 
 use anstream::eprintln;
 use anstyle::Style;
+use anyhow::Context;
 use fmi_rs::{model_description::FMIMajorVersion, zip::get_zip_contents};
 use fmi_rs_libxml2::validate_model_description_against_xsd;
 
 use crate::prepare_fmu;
 
-/// Validate ZIP archive
+/// Validates a ZIP archive
 fn validate_zip_archive(fmu_file: &str) -> Vec<String> {
     let mut problems = vec![];
 
@@ -29,7 +30,7 @@ fn validate_zip_archive(fmu_file: &str) -> Vec<String> {
     problems
 }
 
-pub fn validate_fmu(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
     let bold = Style::new().bold();
     let red = Style::new()
         .bold()
@@ -59,8 +60,7 @@ pub fn validate_fmu(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("{red}error{red:#}: {problem}");
     }
 
-    let text = std::fs::read_to_string(xml_path)
-        .map_err(|e| format!("Failed to read modelDescription.xml: {e}"))?;
+    let text = std::fs::read_to_string(xml_path).context("Failed to read model description")?;
 
     let opt = roxmltree::ParsingOptions {
         allow_dtd: true,
@@ -68,7 +68,7 @@ pub fn validate_fmu(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let doc = roxmltree::Document::parse_with_options(&text, opt)
-        .map_err(|e| format!("Failed to parse modelDescription.xml: {e}"))?;
+        .context("Failed to parse model description")?;
 
     let root = doc.root_element();
 
@@ -78,13 +78,13 @@ pub fn validate_fmu(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
         FMIMajorVersion::V2 => {
             let model_description =
                 fmi_rs::model_description::fmi2::ModelDescription::from_node(&root)
-                    .map_err(|e| format!("Failed to parse modelDescription.xml: {e}"))?;
+                    .context("Failed to parse model description")?;
             problems.extend(model_description.validate());
         }
         FMIMajorVersion::V3 => {
             let model_description =
                 fmi_rs::model_description::fmi3::ModelDescription::from_node(&root)
-                    .map_err(|e| format!("Failed to parse modelDescription.xml: {e}"))?;
+                    .context("Failed to parse modelDescription.xml: {e}")?;
             problems.extend(model_description.validate());
         }
     };
@@ -140,6 +140,6 @@ pub fn validate_fmu(fmu_file: &str) -> Result<(), Box<dyn std::error::Error>> {
     if problems.is_empty() {
         Ok(())
     } else {
-        Err("Validation failed".into())
+        Err(anyhow::anyhow!("Validation failed"))
     }
 }

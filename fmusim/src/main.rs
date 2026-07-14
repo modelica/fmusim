@@ -6,6 +6,7 @@ mod validate;
 
 use anstream::{eprintln, println};
 use anstyle::Style;
+use anyhow::{self, Context};
 use clap::{Args, CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use crash_handler::{CrashEventResult, CrashHandler, make_crash_event};
@@ -14,7 +15,7 @@ use fmi_rs::{
     zip::{create_zip_archive, extract_zip_archive, get_zip_contents},
 };
 use serde::Deserialize;
-use std::{error::Error, io, path::PathBuf};
+use std::{io, path::PathBuf};
 use std::{path::Path, process::ExitCode};
 use tempfile::TempDir;
 
@@ -293,15 +294,6 @@ struct TestArgs {
     log_fmi_calls: bool,
 }
 
-#[macro_export]
-macro_rules! error {
-    ($message:expr) => {
-        use colored::Colorize;
-        eprintln!("{}: {}", "error".red().bold(), $message);
-        return ExitCode::FAILURE;
-    };
-}
-
 fn main() -> ExitCode {
     let _crash_handler = CrashHandler::attach(unsafe {
         make_crash_event(|_| {
@@ -313,21 +305,27 @@ fn main() -> ExitCode {
 
     let cli = Cli::parse();
 
-    let result: Result<(), Box<dyn Error>> = match &cli.command {
+    let result: anyhow::Result<()> = match &cli.command {
         Commands::Completion { shell } => generate_completions(shell),
         Commands::Info { fmu_file } => info::show_fmu_info(fmu_file),
         Commands::List { fmu_file } => list_fmu_contents(fmu_file),
         Commands::Pack {
             source_dir,
             fmu_file,
-        } => create_zip_archive(source_dir, fmu_file),
+        } => create_zip_archive(source_dir, fmu_file)
+            .with_context(|| format!("Failed to create FMU archive {fmu_file} from {source_dir}")),
         Commands::Unpack {
             fmu_file,
             target_dir,
-        } => extract_zip_archive(fmu_file, target_dir),
+        } => extract_zip_archive(fmu_file, target_dir)
+            .with_context(|| format!("Failed to extract FMU archive {fmu_file} to {target_dir}")),
         Commands::Validate { fmu_file } => validate::validate_fmu(fmu_file),
-        Commands::Simulate(args) => simulate::simulate_fmu(args),
-        Commands::SimulateConfig { config_file } => simulate::simulate_config(config_file),
+        Commands::Simulate(args) => {
+            simulate::simulate_fmu(args).map_err(|e| anyhow::anyhow!("{e}"))
+        }
+        Commands::SimulateConfig { config_file } => {
+            simulate::simulate_config(config_file).map_err(|e| anyhow::anyhow!("{e}"))
+        }
         Commands::Build(args) => build::build_platform_binary(args),
     };
 
@@ -336,15 +334,15 @@ fn main() -> ExitCode {
         .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
 
     match result {
-        Ok(_) => ExitCode::SUCCESS,
+        Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("{red}error{red:#}: {e}");
+            eprintln!("{red}error{red:#}: {e:#}");
             ExitCode::FAILURE
         }
     }
 }
 
-fn generate_completions(shell: &ShellArg) -> Result<(), Box<dyn Error + 'static>> {
+fn generate_completions(shell: &ShellArg) -> anyhow::Result<()> {
     let target_shell = match shell {
         ShellArg::Bash => Shell::Bash,
         ShellArg::Zsh => Shell::Zsh,
@@ -358,27 +356,24 @@ fn generate_completions(shell: &ShellArg) -> Result<(), Box<dyn Error + 'static>
     Ok(())
 }
 
-fn list_fmu_contents(fmu_file: &str) -> Result<(), Box<dyn Error>> {
+fn list_fmu_contents(fmu_file: &str) -> anyhow::Result<()> {
     get_zip_contents(fmu_file)
-        .map_err(|e| format!("Failed to list FMU archive contents: {e}"))?
+        .context("Failed to list FMU archive contents")?
         .iter()
         .for_each(|entry| println!("{entry}"));
     Ok(())
 }
 
 /// Common logic to extract an FMU and the detect its FMI major version
-fn prepare_fmu<P: AsRef<Path>>(
-    fmu_path: P,
-) -> Result<(TempDir, PathBuf, FMIMajorVersion), Box<dyn Error>> {
-    let unzipdir =
-        TempDir::new().map_err(|e| format!("Failed to create temporary directory: {e}"))?;
+fn prepare_fmu<P: AsRef<Path>>(fmu_path: P) -> anyhow::Result<(TempDir, PathBuf, FMIMajorVersion)> {
+    let unzipdir = TempDir::new().context("Failed to create temporary directory")?;
 
-    extract_zip_archive(fmu_path, &unzipdir).map_err(|e| format!("Failed to extract FMU: {e}"))?;
+    extract_zip_archive(fmu_path, &unzipdir).context("Failed to extract FMU")?;
 
     let xml_path = unzipdir.path().join("modelDescription.xml");
 
-    let fmi_major_version = peek_fmi_major_version(&xml_path)
-        .map_err(|e| format!("Failed to determine FMI version: {e}"))?;
+    let fmi_major_version =
+        peek_fmi_major_version(&xml_path).context("Failed to determine FMI version")?;
 
     Ok((unzipdir, xml_path, fmi_major_version))
 }
