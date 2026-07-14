@@ -1,6 +1,6 @@
 use std::{path::PathBuf, process::Command};
 
-use fmi_rs::util::download_reference_fmus;
+use fmi_rs::test_fixtures::download_reference_fmus;
 use rstest::*;
 
 #[fixture]
