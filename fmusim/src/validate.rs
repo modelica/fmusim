@@ -1,10 +1,13 @@
-use std::vec;
+use std::{fs, vec};
 
 use anstream::eprintln;
 use anstyle::Style;
 use anyhow::Context;
-use fmi_rs::{model_description::FMIMajorVersion, zip::get_zip_contents};
-use fmi_rs_libxml2::validate_model_description_against_xsd;
+use fmi_rs::{
+    model_description::FMIMajorVersion,
+    schema::{validate_fmi2_model_description, validate_fmi3_model_description},
+    zip::get_zip_contents,
+};
 
 use crate::prepare_fmu;
 
@@ -54,7 +57,12 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
 
     eprintln!("    {green}Validating model description{green:#}");
 
-    let problems = validate_model_description_against_xsd(&xml_path, fmi_major_version as i32);
+    let document = fs::read(&xml_path)?;
+
+    let problems = match fmi_major_version {
+        FMIMajorVersion::V2 => validate_fmi2_model_description(&document),
+        FMIMajorVersion::V3 => validate_fmi3_model_description(&document),
+    };
 
     for problem in problems {
         eprintln!("{red}error{red:#}: {problem}");
@@ -84,7 +92,7 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
         FMIMajorVersion::V3 => {
             let model_description =
                 fmi_rs::model_description::fmi3::ModelDescription::from_node(&root)
-                    .context("Failed to parse modelDescription.xml: {e}")?;
+                    .context("Failed to parse model description")?;
             problems.extend(model_description.validate());
         }
     };
