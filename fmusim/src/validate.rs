@@ -4,8 +4,12 @@ use anstream::eprintln;
 use anstyle::Style;
 use anyhow::Context;
 use fmi_rs::{
+    build_description::BuildDescription,
     model_description::FMIMajorVersion,
-    schema::{validate_fmi2_model_description, validate_fmi3_model_description},
+    schema::{
+        validate_build_description, validate_fmi2_model_description,
+        validate_fmi3_model_description,
+    },
     zip::get_zip_contents,
 };
 
@@ -53,7 +57,7 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
         eprintln!("{red}error{red:#}: {problem}");
     }
 
-    let (_unzipdir, xml_path, fmi_major_version) = prepare_fmu(fmu_file)?;
+    let (unzipdir, xml_path, fmi_major_version) = prepare_fmu(fmu_file)?;
 
     eprintln!("    {green}Validating model description{green:#}");
 
@@ -142,6 +146,25 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
                 }
             }
             eprintln!("      {arrow}|{arrow:#}");
+        }
+    }
+
+    let build_description_path = unzipdir.path().join("sources/buildDescription.xml");
+
+    eprintln!("    {green}Validating build description{green:#}");
+
+    if build_description_path.is_file() {
+        let document =
+            fs::read(&build_description_path).context("Failed to read build description")?;
+
+        let mut problems = validate_build_description(&document);
+
+        if let Err(e) = BuildDescription::from_file(build_description_path) {
+            problems.push(e.to_string());
+        }
+
+        for problem in problems {
+            eprintln!("{red}error{red:#}: {problem}");
         }
     }
 
