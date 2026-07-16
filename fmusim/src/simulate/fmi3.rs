@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::Context;
+use fmi_rs::sundials::solver::CVodeSolverFactory;
 use fmi_rs::{
     model_description::fmi3::{TypeDefinition, VariableType},
     sim::{
@@ -12,7 +13,6 @@ use fmi_rs::{
         fmi3::{Trajectories, csv::read_csv},
     },
 };
-use fmi_rs_sundials::solver::CVodeSolverFactory;
 use plotly::{
     Configuration, Layout, Plot, Scatter,
     color::NamedColor,

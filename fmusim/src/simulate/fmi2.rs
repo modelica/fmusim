@@ -5,7 +5,7 @@ use fmi_rs::model_description::fmi2::{SimpleType, Variability, VariableType};
 use fmi_rs::sim::euler::ForwardEulerFactory;
 use fmi_rs::sim::fmi2::Trajectories;
 use fmi_rs::sim::fmi2::csv::read_csv;
-use fmi_rs_sundials::solver::CVodeSolverFactory;
+use fmi_rs::sundials::solver::CVodeSolverFactory;
 use plotly::layout::AxisRange;
 use plotly::{
     Configuration, Layout, Plot, Scatter,

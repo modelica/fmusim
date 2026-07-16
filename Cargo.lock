@@ -729,13 +729,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fmi-rs-sundials"
-version = "0.4.0"
-dependencies = [
- "fmi-rs",
-]
-
-[[package]]
 name = "fmusim"
 version = "0.4.0"
 dependencies = [
@@ -747,7 +740,6 @@ dependencies = [
  "crash-handler",
  "csv",
  "fmi-rs",
- "fmi-rs-sundials",
  "libloading",
  "plotly",
  "roxmltree",
