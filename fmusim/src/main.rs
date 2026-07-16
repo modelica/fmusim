@@ -70,7 +70,7 @@ fn get_styles() -> clap::builder::Styles {
         )
         .placeholder(
             anstyle::Style::new()
-                .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::BrightCyan))),
+                .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Cyan))),
         )
 }
 
