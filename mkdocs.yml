@@ -7,6 +7,8 @@ nav:
   - Tutorial: tutorial.md
 theme:
   name: material
+  logo: assets/FMI-bare.svg
+  favicon: assets/favicon.ico
   features:
     - content.code.copy
   palette:
