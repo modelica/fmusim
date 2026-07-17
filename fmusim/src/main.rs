@@ -188,6 +188,10 @@ pub struct SimulateArgs {
     #[arg(long)]
     tolerance: Option<f64>,
 
+    /// Set tolerance explicitly
+    #[arg(long)]
+    set_tolerance: bool,
+
     /// CSV file to read the input from
     #[arg(long)]
     input_file: Option<String>,

@@ -56,10 +56,14 @@ pub fn calculate_simulation_steps(
         start_time + 1.0
     };
 
-    let tolerance = if args.tolerance.is_some() {
-        args.tolerance
+    let tolerance = if args.set_tolerance {
+        if args.tolerance.is_some() {
+            args.tolerance
+        } else {
+            default_tolerance
+        }
     } else {
-        default_tolerance
+        None
     };
 
     let output_interval = if let Some(output_interval) = args.output_interval {
