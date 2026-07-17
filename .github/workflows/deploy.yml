@@ -35,9 +35,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install mkdocs
-          # Uncomment the line below if you are using the Material theme
-          # pip install mkdocs-material 
+          pip install mkdocs-material 
 
       - name: Build documentation
         run: mkdocs build
