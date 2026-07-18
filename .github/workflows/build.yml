@@ -84,6 +84,9 @@ jobs:
           name: fmusim-x86_64-linux
           path: artifacts/fmusim-x86_64-linux
 
+      - name: Make binary executable
+        run: chmod +x ./artifacts/fmusim-x86_64-linux/fmusim
+
       - name: Install dependencies
         run: |
           pip install mkdocs-material
