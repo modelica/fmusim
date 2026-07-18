@@ -60,6 +60,7 @@ jobs:
           dist/
   
   docs:
+    name: Build and deploy docs
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -81,7 +82,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: fmusim-x86_64-linux
-          path: artifacts
+          path: artifacts/fmusim-x86_64-linux
 
       - name: Install dependencies
         run: |
