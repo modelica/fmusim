@@ -20,6 +20,7 @@ tempfile = "3.27"
 term_size = "0.3"
 zip = "8.6"
 anyhow = "1.0.103"
+clap-markdown = "0.1.5"
 
 [dev-dependencies]
 fmi-rs = { path = "../fmi-rs/fmi-rs", features = ["test-fixtures"] }

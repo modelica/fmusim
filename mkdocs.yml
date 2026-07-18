@@ -5,6 +5,7 @@ repo_url: https://github.com/modelica/fmusim
 nav:
   - Home: index.md
   - Tutorial: tutorial.md
+  - Reference: reference.md
 theme:
   name: material
   logo: assets/FMI-bare.svg

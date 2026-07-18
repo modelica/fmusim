@@ -15,7 +15,7 @@ use fmi_rs::{
     zip::{create_zip_archive, extract_zip_archive, get_zip_contents},
 };
 use serde::Deserialize;
-use std::{io, path::PathBuf};
+use std::{fs, io, path::PathBuf};
 use std::{path::Path, process::ExitCode};
 use tempfile::TempDir;
 
@@ -153,6 +153,12 @@ enum Commands {
         /// The shell to generate completions for
         #[arg(value_enum)]
         shell: ShellArg,
+    },
+    /// Generate the Markdown CLI documentation
+    #[command(hide = true)]
+    MarkdownHelp {
+        /// Path to the Markdown file to generate
+        output_file: String,
     },
 }
 
@@ -328,6 +334,16 @@ fn main() -> ExitCode {
         Commands::Simulate(args) => simulate::simulate_fmu(args),
         Commands::SimulateConfig { config_file } => simulate::simulate_config(config_file),
         Commands::Build(args) => build::build_platform_binary(args),
+        Commands::MarkdownHelp { output_file } => {
+            let command = Cli::command();
+            let options = clap_markdown::MarkdownOptions::new()
+                .show_footer(false)
+                .show_table_of_contents(false)
+                .show_aliases(false);
+            let markdown = clap_markdown::help_markdown_command_custom(&command, &options);
+            fs::write(output_file, markdown)
+                .with_context(|| format!("Failed to write Markdown documentation '{output_file}'"))
+        }
     };
 
     let red = Style::new()

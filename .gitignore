@@ -27,3 +27,6 @@ playground/
 
 # Mkdocs output
 site/
+
+# generated CLI documentation
+docs/reference.md
