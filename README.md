@@ -27,6 +27,12 @@ powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/mod
 
 To try out fmusim you can download the [latest release](https://github.com/modelica/Reference-FMUs/releases/latest/download/Reference-FMUs.zip) of the Reference FMUs.
 
+## Documentation
+
+fmusim's documentation is available at [modelica.github.io/fmusim](https://modelica.github.io/fmusim).
+
+Additionally, the command line reference documentation can be viewed with `fmusim help`.
+
 ## Getting help
 
 ### Help menus
