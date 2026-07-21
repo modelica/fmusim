@@ -22,7 +22,10 @@ use plotly::{
     },
 };
 
-use crate::{InterfaceType, SimulateArgs, SolverType, simulate::calculate_simulation_steps};
+use crate::{
+    InterfaceType, SimulateArgs, SolverType,
+    simulate::{calculate_simulation_steps, split_time_intervals_indices},
+};
 
 pub fn simulate_fmu(
     args: &SimulateArgs,
@@ -226,6 +229,12 @@ pub fn plot_result(
         .show_legend(false)
         .margin(Margin::new().top(30).bottom(40).left(65).right(30));
 
+    let mode = if show_markers {
+        Mode::LinesMarkers
+    } else {
+        Mode::Lines
+    };
+
     for (i, variable) in trajectories.variables.iter().enumerate() {
         let mut axis_title = variable.name.clone();
 
@@ -242,7 +251,7 @@ pub fn plot_result(
             y_axis = y_axis
                 .tick_values(vec![0.0, 1.0])
                 .tick_text(vec!["false", "true"])
-                .range(AxisRange::new(0.0, 1.0))
+                .range(AxisRange::new(-0.01, 1.01))
                 .fixed_range(true);
         }
 
@@ -337,23 +346,26 @@ pub fn plot_result(
                     plot.add_trace(ref_trace);
                 }
 
-                let mut trace = Scatter::new(time.clone(), scalar_values).name(name);
+                for (start, end) in split_time_intervals_indices(&time) {
+                    let time_slice = &time[start..end];
+                    let values_slice = &scalar_values[start..end];
 
-                // Use the shared x-axis ("x") for all subplots
-                trace = trace
-                    .x_axis("x")
-                    .y_axis(format!("y{row}"))
-                    .line(Line::new().width(1.5).color(*current_color));
+                    let mut trace = Scatter::new(time_slice.to_owned(), values_slice.to_owned())
+                        .name(name.clone());
 
-                if show_markers {
-                    trace = trace.mode(Mode::LinesMarkers);
+                    // Use the shared x-axis ("x") for all subplots
+                    trace = trace
+                        .x_axis("x")
+                        .y_axis(format!("y{row}"))
+                        .line(Line::new().width(1.5).color(*current_color))
+                        .mode(mode.clone());
+
+                    if matches!(variable.variableType, VariableType::Boolean { .. }) {
+                        trace = trace.fill(Fill::ToZeroY).fill_color(NamedColor::AliceBlue);
+                    }
+
+                    plot.add_trace(trace);
                 }
-
-                if matches!(variable.variableType, VariableType::Boolean { .. }) {
-                    trace = trace.fill(Fill::ToZeroY).fill_color(NamedColor::AliceBlue);
-                }
-
-                plot.add_trace(trace);
             }
         }
     }

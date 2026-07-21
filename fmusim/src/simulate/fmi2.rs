@@ -1,4 +1,4 @@
-use crate::simulate::calculate_simulation_steps;
+use crate::simulate::{calculate_simulation_steps, split_time_intervals_indices};
 use crate::{InterfaceType, SimulateArgs, SolverType};
 use anyhow::Context;
 use fmi_rs::model_description::fmi2::{SimpleType, Variability, VariableType};
@@ -204,6 +204,12 @@ pub fn plot_result(
         .show_legend(false)
         .margin(Margin::new().top(30).bottom(40).left(65).right(30));
 
+    let mode = if show_markers {
+        Mode::LinesMarkers
+    } else {
+        Mode::Lines
+    };
+
     for (i, variable) in trajectories.variables.iter().enumerate() {
         let mut axis_title = variable.name.clone();
 
@@ -220,7 +226,7 @@ pub fn plot_result(
             y_axis = y_axis
                 .tick_values(vec![0.0, 1.0])
                 .tick_text(vec!["false", "true"])
-                .range(AxisRange::new(0.0, 1.0))
+                .range(AxisRange::new(-0.01, 1.01))
                 .fixed_range(true);
         }
 
@@ -281,46 +287,26 @@ pub fn plot_result(
             line = line.shape(LineShape::Hv);
         }
 
-        if let Some(ref_trajectories) = reference
-            && let Some(index) = ref_trajectories
-                .variables
-                .iter()
-                .enumerate()
-                .find(|i| i.1.name == variable.name)
-                .map(|i| i.0)
-        {
-            let ref_values: Vec<f64> = ref_trajectories
-                .rows
-                .iter()
-                .map(|row| row[index].to_f64())
-                .collect();
+        for (start, end) in split_time_intervals_indices(&time) {
+            let time_slice = &time[start..end];
+            let values_slice = &values[start..end];
 
-            let mut ref_trace =
-                Scatter::new(ref_trajectories.time.clone(), ref_values).name(name.clone());
+            let mut trace =
+                Scatter::new(time_slice.to_owned(), values_slice.to_owned()).name(&name);
 
-            let ref_line = Line::new().width(3.0).color("#229beb44");
-
-            ref_trace = ref_trace
+            // Use the shared x-axis ("x") for all subplots
+            trace = trace
                 .x_axis("x")
                 .y_axis(format!("y{row}"))
-                .line(ref_line);
+                .line(line.clone())
+                .mode(mode.clone());
 
-            plot.add_trace(ref_trace);
+            if matches!(variable.variableType, VariableType::Boolean { .. }) {
+                trace = trace.fill(Fill::ToZeroY).fill_color(NamedColor::AliceBlue);
+            }
+
+            plot.add_trace(trace);
         }
-
-        let mut trace = Scatter::new(time, values).name(name);
-        // Use the shared x-axis ("x") for all subplots
-        trace = trace.x_axis("x").y_axis(format!("y{row}")).line(line);
-
-        if show_markers {
-            trace = trace.mode(Mode::LinesMarkers);
-        }
-
-        if matches!(variable.variableType, VariableType::Boolean { .. }) {
-            trace = trace.fill(Fill::ToZeroY).fill_color(NamedColor::AliceBlue);
-        }
-
-        plot.add_trace(trace);
     }
 
     if show_events {

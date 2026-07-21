@@ -109,3 +109,51 @@ pub fn simulate_config(config_file: &str) -> anyhow::Result<()> {
     let toml_args = toml::from_str::<SimulateArgs>(&content)?;
     simulate_fmu(&toml_args)
 }
+
+/// Returns a list of `(start_idx, end_idx)` index pairs for slicing.
+/// The first element at an event (first duplicate) is included in the prior slice.
+/// Intermediate duplicates are skipped, and the next slice starts at the last duplicate.
+pub fn split_time_intervals_indices(time_steps: &[f64]) -> Vec<(usize, usize)> {
+    if time_steps.is_empty() {
+        return vec![];
+    }
+
+    let mut intervals = Vec::new();
+    let mut start_idx = 0;
+    let mut i = 0;
+
+    while i < time_steps.len() {
+        // Detect a sequence of duplicate timestamps
+        if i + 1 < time_steps.len() && time_steps[i] == time_steps[i + 1] {
+            let dup_start = i;
+            let mut dup_end = i + 1;
+
+            // Find the last index of this duplicate block
+            while dup_end + 1 < time_steps.len() && time_steps[dup_end + 1] == time_steps[i] {
+                dup_end += 1;
+            }
+
+            // Exclusive upper bound including the first duplicate element
+            let end_idx = dup_start + 1;
+
+            if start_idx < end_idx {
+                intervals.push((start_idx, end_idx));
+            }
+
+            // Next interval starts at the last duplicate index
+            start_idx = dup_end;
+
+            // Jump past the duplicate block
+            i = dup_end + 1;
+        } else {
+            i += 1;
+        }
+    }
+
+    // Push final remaining segment
+    if start_idx < time_steps.len() {
+        intervals.push((start_idx, time_steps.len()));
+    }
+
+    intervals
+}
