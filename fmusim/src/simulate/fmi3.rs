@@ -123,13 +123,13 @@ pub fn simulate_fmu(
 
     let result = match interface_type {
         InterfaceType::ModelExchange => match args.solver {
-            SolverType::Euler => fmi_rs::sim::fmi3::simulate_me(
+            SolverType::Euler => fmi_rs::sim::fmi3::me::simulate(
                 &settings,
                 &ForwardEulerFactory { fixes_step_size },
                 input.as_ref(),
                 &mut recorder,
             ),
-            SolverType::Cvode => fmi_rs::sim::fmi3::simulate_me(
+            SolverType::Cvode => fmi_rs::sim::fmi3::me::simulate(
                 &settings,
                 &CVodeSolverFactory,
                 input.as_ref(),
@@ -137,7 +137,7 @@ pub fn simulate_fmu(
             ),
         },
         InterfaceType::CoSimulation => {
-            fmi_rs::sim::fmi3::simulate_cs(&settings, input.as_ref(), &mut recorder)
+            fmi_rs::sim::fmi3::cs::simulate(&settings, input.as_ref(), &mut recorder)
         }
     };
 
