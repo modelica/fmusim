@@ -716,7 +716,7 @@ dependencies = [
 
 [[package]]
 name = "fmi-rs"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "approx",
@@ -740,7 +740,7 @@ dependencies = [
 
 [[package]]
 name = "fmusim"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anstream",
  "anstyle",
