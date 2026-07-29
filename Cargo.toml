@@ -11,3 +11,21 @@ license = "BSD-2-Clause"
 
 [workspace.dependencies]
 fmi-rs = { path = "fmi-rs/fmi-rs", version = "0.6.0" }
+
+[workspace.lints.clippy]
+# Disallow explicit panicking mechanisms
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+unreachable = "deny"
+panic_in_result_fn = "deny"
+
+# Disallow implicit panicking operations
+# indexing_slicing = "deny"
+# arithmetic_side_effects = "deny" # Denies unchecked +, -, *, /, % operations
+
+# Additional safety lints for fallible operations
+out_of_bounds_indexing = "deny"
+string_slice = "deny" # Slicing strings can panic if cut on non-UTF-8 boundaries

@@ -25,3 +25,6 @@ clap-markdown = "0.1.5"
 [dev-dependencies]
 fmi-rs = { path = "../fmi-rs/fmi-rs", features = ["test-fixtures"] }
 rstest = "0.26.1"
+
+[lints]
+workspace = true

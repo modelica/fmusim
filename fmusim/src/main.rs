@@ -37,18 +37,14 @@ enum SolverType {
     #[default]
     #[value(name = "cvode")]
     Cvode,
+    #[value(name = "ida")]
+    Ida,
 }
 
 fn parse_start_value(s: &str) -> Result<(String, String), String> {
-    let parts: Vec<&str> = s.splitn(2, '=').collect();
-
-    if parts.len() != 2 {
-        return Err(format!(
-            "Invalid format {s:?}. Expected \"variable_name=value\"."
-        ));
-    }
-
-    Ok((parts[0].to_string(), parts[1].to_string()))
+    s.split_once('=')
+        .map(|(name, value)| (name.to_owned(), value.to_owned()))
+        .ok_or_else(|| format!("Invalid format {s:?}. Expected 'variable_name=value'."))
 }
 
 fn get_styles() -> clap::builder::Styles {
@@ -179,6 +175,10 @@ pub struct SimulateArgs {
     /// Interval for sampling the output variables
     #[arg(long)]
     output_interval: Option<f64>,
+
+    /// Use logarithmic time scale
+    #[arg(long)]
+    log_time_scale: bool,
 
     /// Start time for the simulation
     #[arg(long)]
@@ -311,8 +311,7 @@ fn main() -> ExitCode {
             eprintln!("The application crashed due to an unexpected exception.");
             CrashEventResult::Handled(true)
         })
-    })
-    .expect("Failed to attach crash handler");
+    });
 
     let cli = Cli::parse();
 

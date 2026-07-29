@@ -1,11 +1,11 @@
 use crate::simulate::{calculate_simulation_steps, split_time_intervals_indices};
 use crate::{InterfaceType, SimulateArgs, SolverType};
-use anyhow::Context;
+use anyhow::{Context, bail};
 use fmi_rs::model_description::fmi2::{SimpleType, Variability, VariableType};
-use fmi_rs::sim::euler::ForwardEulerFactory;
 use fmi_rs::sim::fmi2::Trajectories;
 use fmi_rs::sim::fmi2::csv::read_csv;
-use fmi_rs::sundials::solver::CVodeSolverFactory;
+use fmi_rs::sim::solver::ForwardEulerFactory;
+use fmi_rs::sundials::solver::cvode::CVodeSolverFactory;
 use plotly::layout::AxisRange;
 use plotly::{
     Configuration, Layout, Plot, Scatter,
@@ -67,7 +67,9 @@ pub fn simulate_fmu(
         stop_time,
         set_stop_time: args.set_stop_time,
         output_interval,
+        log_time_scale: args.log_time_scale,
         tolerance,
+        set_tolerance: args.set_tolerance,
         start_values: args.start_values.clone(),
         log_fmi_calls: args.log_fmi_calls,
         input_file: args.input_file.as_ref().map(PathBuf::from),
@@ -111,7 +113,9 @@ pub fn simulate_fmu(
         InterfaceType::ModelExchange => match args.solver {
             SolverType::Euler => fmi_rs::sim::fmi2::me::simulate(
                 &settings,
-                &ForwardEulerFactory { fixes_step_size },
+                &ForwardEulerFactory {
+                    fixed_step_size: fixes_step_size,
+                },
                 input.as_ref(),
                 &mut recorder,
             ),
@@ -121,6 +125,7 @@ pub fn simulate_fmu(
                 input.as_ref(),
                 &mut recorder,
             ),
+            SolverType::Ida => bail!("DAEs are not supported in FMI 2.0"),
         },
         InterfaceType::CoSimulation => {
             fmi_rs::sim::fmi2::cs::simulate(&settings, input.as_ref(), &mut recorder)

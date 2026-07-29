@@ -1,3 +1,7 @@
+#![allow(clippy::unwrap_used)]
+#![allow(clippy::expect_used)]
+#![allow(clippy::panic)]
+
 use std::{path::PathBuf, process::Command};
 
 use fmi_rs::test_fixtures::download_reference_fmus;

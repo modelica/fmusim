@@ -5,20 +5,22 @@ use std::{
 };
 
 use anyhow::Context;
-use fmi_rs::sundials::solver::CVodeSolverFactory;
 use fmi_rs::{
     model_description::fmi3::{TypeDefinition, VariableType},
     sim::{
-        euler::ForwardEulerFactory,
         fmi3::{Trajectories, csv::read_csv},
+        solver::ForwardEulerFactory,
     },
+    sundials::solver::ida::IdaSolverFactory,
 };
+use fmi_rs::{sim::fmi3::SimulationSettings, sundials::solver::cvode::CVodeSolverFactory};
 use plotly::{
     Configuration, Layout, Plot, Scatter,
     color::NamedColor,
     common::{Fill, Line, Mode},
     layout::{
-        Axis, AxisRange, GridPattern, LayoutGrid, Margin, Shape, ShapeLayer, ShapeLine, ShapeType,
+        Axis, AxisRange, AxisType, GridPattern, LayoutGrid, Margin, Shape, ShapeLayer, ShapeLine,
+        ShapeType,
     },
 };
 
@@ -74,14 +76,16 @@ pub fn simulate_fmu(
     let (start_time, stop_time, tolerance, output_interval) =
         calculate_simulation_steps(args, default_experiment, fixed_step_size);
 
-    let settings = fmi_rs::sim::fmi3::SimulationSettings {
+    let settings = SimulationSettings {
         unzipdir: unzipdir.path(),
         model_description: &model_description,
         start_time,
         stop_time,
         set_stop_time: args.set_stop_time,
         output_interval,
+        log_time_scale: args.log_time_scale,
         tolerance,
+        set_tolerance: args.set_tolerance,
         start_values: args.start_values.clone(),
         log_fmi_calls: args.log_fmi_calls,
         input_file: args.input_file.as_ref().map(PathBuf::from),
@@ -125,7 +129,9 @@ pub fn simulate_fmu(
         InterfaceType::ModelExchange => match args.solver {
             SolverType::Euler => fmi_rs::sim::fmi3::me::simulate(
                 &settings,
-                &ForwardEulerFactory { fixes_step_size },
+                &ForwardEulerFactory {
+                    fixed_step_size: fixes_step_size,
+                },
                 input.as_ref(),
                 &mut recorder,
             ),
@@ -135,6 +141,14 @@ pub fn simulate_fmu(
                 input.as_ref(),
                 &mut recorder,
             ),
+            SolverType::Ida => {
+                fmi_rs::sim::fmi3::me::simulate(
+                    &settings,
+                    &IdaSolverFactory,
+                    input.as_ref(),
+                    &mut recorder,
+                )
+            }
         },
         InterfaceType::CoSimulation => {
             fmi_rs::sim::fmi3::cs::simulate(&settings, input.as_ref(), &mut recorder)
@@ -162,6 +176,7 @@ pub fn simulate_fmu(
             ref_trajectories.as_ref(),
             args.show_markers,
             args.show_events,
+            args.log_time_scale,
         );
 
         // Generate a unique path in the temp directory starting with the model name
@@ -188,6 +203,7 @@ pub fn plot_result(
     ref_trajectories: Option<&Trajectories<'_>>,
     show_markers: bool,
     show_events: bool,
+    log_x: bool,
 ) -> Plot {
     let mut plot = Plot::new();
 
@@ -211,8 +227,23 @@ pub fn plot_result(
         .zero_line_color(grid_color)
         .grid_color(grid_color);
 
+    if log_x {
+        x_axis = x_axis.type_(AxisType::Log);
+    }
+
     if let (Some(first), Some(last)) = (trajectories.time.first(), trajectories.time.last()) {
-        x_axis = x_axis.range(AxisRange::new(*first, *last));
+        let (min, max) = if log_x {
+            let max = if *last > 0.0 { last.log10() } else { 2.0 };
+            let min = if *first > 0.0 {
+                first.log10()
+            } else {
+                max - 5.0
+            };
+            (min, max)
+        } else {
+            (*first, *last)
+        };
+        x_axis = x_axis.range(AxisRange::new(min, max));
     }
 
     let mut layout = Layout::new()

@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used)]
+
 mod common;
 
 use common::{run_fmusim, temp_dir, workspace_root};

@@ -12,7 +12,7 @@ pub fn calculate_simulation_steps(
     args: &SimulateArgs,
     default_experiment: Option<&DefaultExperiment>,
     fixed_step_size: Option<f64>,
-) -> (f64, f64, Option<f64>, f64) {
+) -> (f64, f64, f64, f64) {
     let (default_start_time, default_stop_time, default_tolerance, default_output_interval) =
         if let Some(default_experiment) = default_experiment {
             let start_time: Option<f64> = default_experiment
@@ -56,15 +56,9 @@ pub fn calculate_simulation_steps(
         start_time + 1.0
     };
 
-    let tolerance = if args.set_tolerance {
-        if args.tolerance.is_some() {
-            args.tolerance
-        } else {
-            default_tolerance
-        }
-    } else {
-        None
-    };
+    let tolerance = args
+        .tolerance
+        .unwrap_or_else(|| default_tolerance.unwrap_or(1e-4));
 
     let output_interval = if let Some(output_interval) = args.output_interval {
         output_interval
