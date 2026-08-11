@@ -79,6 +79,7 @@ pub fn simulate_fmu(
     let settings = SimulationSettings {
         unzipdir: unzipdir.path(),
         model_description: &model_description,
+        enable_dae: args.enable_dae,
         start_time,
         stop_time,
         set_stop_time: args.set_stop_time,
@@ -141,14 +142,12 @@ pub fn simulate_fmu(
                 input.as_ref(),
                 &mut recorder,
             ),
-            SolverType::Ida => {
-                fmi_rs::sim::fmi3::me::simulate(
-                    &settings,
-                    &IdaSolverFactory,
-                    input.as_ref(),
-                    &mut recorder,
-                )
-            }
+            SolverType::Ida => fmi_rs::sim::fmi3::me::simulate(
+                &settings,
+                &IdaSolverFactory,
+                input.as_ref(),
+                &mut recorder,
+            ),
         },
         InterfaceType::CoSimulation => {
             fmi_rs::sim::fmi3::cs::simulate(&settings, input.as_ref(), &mut recorder)

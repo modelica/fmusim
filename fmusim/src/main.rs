@@ -260,6 +260,10 @@ pub struct SimulateArgs {
     #[arg(long, value_enum, default_value_t = SolverType::Cvode)]
     solver: SolverType,
 
+    /// Enable DAE mode
+    #[arg(long)]
+    enable_dae: bool,
+
     /// File to read the serialized FMU state from
     #[arg(long)]
     initial_fmu_state_file: Option<String>,
