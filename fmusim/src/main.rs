@@ -208,6 +208,10 @@ pub struct SimulateArgs {
     #[arg(long)]
     output_file: Option<String>,
 
+    /// Set inputs and get outputs in intermediate update mode
+    #[arg(long)]
+    intermediate_update: bool,
+
     /// Plot of up to 8 output variables
     #[arg(long)]
     show_plot: bool,

@@ -1,9 +1,13 @@
 use crate::simulate::{calculate_simulation_steps, split_time_intervals_indices};
 use crate::{InterfaceType, SimulateArgs, SolverType};
 use anyhow::{Context, bail};
-use fmi_rs::model_description::fmi2::{SimpleType, Variability, VariableType};
-use fmi_rs::sim::fmi2::Trajectories;
-use fmi_rs::sim::fmi2::csv::read_csv;
+use fmi_rs::model_description::fmi2::{
+    Causality, ModelDescription, SimpleType, Variability, VariableType,
+};
+use fmi_rs::sim::fmi2::csv::{read_csv, write_csv};
+use fmi_rs::sim::fmi2::input::StaticInput;
+use fmi_rs::sim::fmi2::recorder::Recorder;
+use fmi_rs::sim::fmi2::{SimulationSettings, Trajectories, cs, me};
 use fmi_rs::sim::solver::ForwardEulerFactory;
 use fmi_rs::sundials::solver::cvode::CVodeSolverFactory;
 use plotly::layout::AxisRange;
@@ -13,45 +17,31 @@ use plotly::{
     common::{Fill, Line, LineShape, Mode},
     layout::{Axis, GridPattern, LayoutGrid, Margin, Shape, ShapeLayer, ShapeLine, ShapeType},
 };
-use std::collections::HashMap;
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 pub fn simulate_fmu(
     args: &SimulateArgs,
     unzipdir: &tempfile::TempDir,
     xml_path: &Path,
 ) -> anyhow::Result<()> {
-    let model_description = fmi_rs::model_description::fmi2::ModelDescription::from_path(xml_path)?;
+    let model_description = Arc::new(ModelDescription::from_path(xml_path)?);
 
-    let output_variables: Vec<&fmi_rs::model_description::fmi2::ScalarVariable> =
+    let output_variable_indices: Vec<usize> =
         if args.output_variable.is_empty() {
             model_description
                 .modelVariables
                 .iter()
-                .filter(|v| v.causality == fmi_rs::model_description::fmi2::Causality::Output)
+                .enumerate()
+                .filter(|(_i, v)| v.causality == Causality::Output)
+                .map(|(i, _v)| i)
                 .collect()
         } else {
-            let variable_map: HashMap<&str, &fmi_rs::model_description::fmi2::ScalarVariable> =
-                model_description
-                    .modelVariables
-                    .iter()
-                    .map(|var| (var.name.as_str(), var))
-                    .collect();
-
-            let mut output_variables = vec![];
-
-            for variable_name in &args.output_variable {
-                if let Some(&variable) = variable_map.get(variable_name.as_str()) {
-                    output_variables.push(variable);
-                } else {
-                    return Err(anyhow::anyhow!(
-                        "The requested output variable {variable_name:?} does not exist."
-                    ));
-                }
-            }
-
-            output_variables
+            args.output_variable
+                .iter()
+                .map(|name| model_description.variable_index_by_name(name))
+                .collect::<Result<Vec<_>, _>>()?
         };
 
     let (start_time, stop_time, tolerance, output_interval) = calculate_simulation_steps(
@@ -60,9 +50,9 @@ pub fn simulate_fmu(
         args.fixed_step_size,
     );
 
-    let settings = fmi_rs::sim::fmi2::SimulationSettings {
-        unzipdir: unzipdir.path(),
-        model_description: &model_description,
+    let settings = SimulationSettings {
+        unzipdir: unzipdir.path().to_path_buf(),
+        model_description: model_description.clone(),
         start_time,
         stop_time,
         set_stop_time: args.set_stop_time,
@@ -95,45 +85,45 @@ pub fn simulate_fmu(
     let input = if let Some(path) = &args.input_file {
         let file =
             File::open(path).with_context(|| format!("Failed to read input file '{path}'"))?;
-        let trajectories = fmi_rs::sim::fmi2::csv::read_csv(&file, settings.model_description)
+        let trajectories = read_csv(&file, settings.model_description.clone())
             .with_context(|| format!("Failed to parse input file '{path}'"))?;
-        Some(fmi_rs::sim::fmi2::input::StaticInput::new(trajectories))
+        Some(Arc::new(StaticInput::new(trajectories)))
     } else {
         None
     };
 
-    let mut trajectories =
-        fmi_rs::sim::fmi2::Trajectories::new(&model_description, output_variables.clone());
+    let trajectories = Trajectories::new(model_description.clone(), output_variable_indices);
 
-    let mut recorder = fmi_rs::sim::fmi2::recorder::Recorder::new(&mut trajectories);
+    let recorder = Arc::new(Recorder::new(trajectories));
 
     let fixes_step_size = args.fixed_step_size.unwrap_or(output_interval);
 
     let result = match interface_type {
         InterfaceType::ModelExchange => match args.solver {
-            SolverType::Euler => fmi_rs::sim::fmi2::me::simulate(
+            SolverType::Euler => me::simulate(
                 &settings,
                 &ForwardEulerFactory {
                     fixed_step_size: fixes_step_size,
                 },
-                input.as_ref(),
-                &mut recorder,
+                input,
+                recorder.clone(),
             ),
-            SolverType::Cvode => fmi_rs::sim::fmi2::me::simulate(
-                &settings,
-                &CVodeSolverFactory,
-                input.as_ref(),
-                &mut recorder,
-            ),
+            SolverType::Cvode => {
+                me::simulate(&settings, &CVodeSolverFactory, input, recorder.clone())
+            }
             SolverType::Ida => bail!("DAEs are not supported in FMI 2.0"),
         },
-        InterfaceType::CoSimulation => {
-            fmi_rs::sim::fmi2::cs::simulate(&settings, input.as_ref(), &mut recorder)
-        }
+        InterfaceType::CoSimulation => cs::simulate(&settings, input, recorder.clone()),
     };
 
+    let trajectories = if let Ok(recorder) = Arc::try_unwrap(recorder) {
+        recorder.into_trajectories()
+    } else {
+        bail!("Failed to unwrap recorder");
+    };
+    
     if let Some(output_file) = args.output_file.as_ref() {
-        fmi_rs::sim::fmi2::csv::write_csv(&trajectories, output_file)
+        write_csv(&trajectories, output_file)
             .with_context(|| format!("Failed to write output file '{}'", output_file))?;
     }
 
@@ -141,7 +131,7 @@ pub fn simulate_fmu(
         let reference = if let Some(path) = &args.reference_file {
             let reader = File::open(path)
                 .with_context(|| format!("Failed to read reference file '{path}'"))?;
-            let trajectories = read_csv(reader, &model_description)
+            let trajectories = read_csv(reader, model_description.clone())
                 .with_context(|| format!("Failed to parse reference file '{path}'"))?;
             Some(trajectories)
         } else {
@@ -175,14 +165,14 @@ pub fn simulate_fmu(
 }
 
 pub fn plot_result(
-    trajectories: &Trajectories<'_>,
-    _reference: Option<&Trajectories<'_>>,
+    trajectories: &Trajectories,
+    _reference: Option<&Trajectories>,
     show_markers: bool,
     show_events: bool,
 ) -> Plot {
     let mut plot = Plot::new();
 
-    let plot_height = 250 * trajectories.variables.len().max(1);
+    let plot_height = 250 * trajectories.len().max(1);
 
     let grid_color = "rgba(211, 211, 211, 0.5)";
 
@@ -200,7 +190,7 @@ pub fn plot_result(
         .x_axis(x_axis)
         .grid(
             LayoutGrid::new()
-                .rows(trajectories.variables.len())
+                .rows(trajectories.len())
                 .columns(1)
                 .pattern(GridPattern::Coupled), // Link X axes in the same column
         )
@@ -215,7 +205,7 @@ pub fn plot_result(
         Mode::Lines
     };
 
-    for (i, variable) in trajectories.variables.iter().enumerate() {
+    for (i, variable) in trajectories.variables().enumerate() {
         let mut axis_title = variable.name.clone();
 
         if let Some(unit) = trajectories.model_description.get_unit(variable) {
