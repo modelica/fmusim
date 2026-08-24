@@ -8,9 +8,12 @@ use std::{
 
 use anyhow::{Context, bail};
 use fmi_rs::{
-    model_description::fmi3::{TypeDefinition, VariableType}, sim::{
-        fmi3::{Trajectories, csv::read_csv, input::StaticInput, recorder::Recorder}, solver::ForwardEulerFactory,
-    }, sundials::solver::ida::IdaSolverFactory,
+    model_description::fmi3::{TypeDefinition, VariableType},
+    sim::{
+        fmi3::{Trajectories, csv::read_csv, input::StaticInput, recorder::Recorder},
+        solver::ForwardEulerFactory,
+    },
+    sundials::solver::ida::IdaSolverFactory,
 };
 use fmi_rs::{sim::fmi3::SimulationSettings, sundials::solver::cvode::CVodeSolverFactory};
 use plotly::{
@@ -122,10 +125,8 @@ pub fn simulate_fmu(
     };
 
     let trajectories = Trajectories::new(model_description.clone(), output_variable_indices);
-    
-    let recorder = Arc::new(Recorder::new(
-        trajectories,
-    ));
+
+    let recorder = Arc::new(Recorder::new(trajectories));
 
     let fixes_step_size = args.fixed_step_size.unwrap_or(output_interval);
 
@@ -162,7 +163,7 @@ pub fn simulate_fmu(
     } else {
         bail!("Failed to unwrap recorder");
     };
-    
+
     if let Some(output_file) = args.output_file.as_ref() {
         fmi_rs::sim::fmi3::csv::write_csv(&trajectories, output_file)
             .with_context(|| format!("Failed to write output file '{}'", output_file))?;

@@ -28,21 +28,20 @@ pub fn simulate_fmu(
 ) -> anyhow::Result<()> {
     let model_description = Arc::new(ModelDescription::from_path(xml_path)?);
 
-    let output_variable_indices: Vec<usize> =
-        if args.output_variable.is_empty() {
-            model_description
-                .modelVariables
-                .iter()
-                .enumerate()
-                .filter(|(_i, v)| v.causality == Causality::Output)
-                .map(|(i, _v)| i)
-                .collect()
-        } else {
-            args.output_variable
-                .iter()
-                .map(|name| model_description.variable_index_by_name(name))
-                .collect::<Result<Vec<_>, _>>()?
-        };
+    let output_variable_indices: Vec<usize> = if args.output_variable.is_empty() {
+        model_description
+            .modelVariables
+            .iter()
+            .enumerate()
+            .filter(|(_i, v)| v.causality == Causality::Output)
+            .map(|(i, _v)| i)
+            .collect()
+    } else {
+        args.output_variable
+            .iter()
+            .map(|name| model_description.variable_index_by_name(name))
+            .collect::<Result<Vec<_>, _>>()?
+    };
 
     let (start_time, stop_time, tolerance, output_interval) = calculate_simulation_steps(
         args,
@@ -121,7 +120,7 @@ pub fn simulate_fmu(
     } else {
         bail!("Failed to unwrap recorder");
     };
-    
+
     if let Some(output_file) = args.output_file.as_ref() {
         write_csv(&trajectories, output_file)
             .with_context(|| format!("Failed to write output file '{}'", output_file))?;
