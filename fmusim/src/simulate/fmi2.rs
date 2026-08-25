@@ -86,7 +86,7 @@ pub fn simulate_fmu(
             File::open(path).with_context(|| format!("Failed to read input file '{path}'"))?;
         let trajectories = read_csv(&file, settings.model_description.clone())
             .with_context(|| format!("Failed to parse input file '{path}'"))?;
-        Some(Arc::new(StaticInput::new(trajectories)))
+        Some(Arc::new(StaticInput::new(trajectories, tolerance)))
     } else {
         None
     };
