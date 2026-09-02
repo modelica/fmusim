@@ -4,9 +4,14 @@ use anstream::eprintln;
 use anstyle::Style;
 use anyhow::Context;
 use fmi_rs::{
-    build_description::BuildDescription, dae::DaeManifest, model_description::FMIMajorVersion, schema::{
-        validate_build_description, validate_dae_manifest, validate_fmi2_model_description, validate_fmi3_model_description,
-    }, zip::get_zip_contents,
+    build_description::BuildDescription,
+    dae::DaeManifest,
+    model_description::FMIMajorVersion,
+    schema::{
+        validate_build_description, validate_dae_manifest, validate_fmi2_model_description,
+        validate_fmi3_model_description,
+    },
+    zip::get_zip_contents,
 };
 
 use crate::prepare_fmu;
@@ -164,7 +169,9 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
         }
     }
 
-    let dae_manifest_path = unzipdir.path().join("extra/org.fmi-standard.fmi-ls-dae/fmi-ls-manifest.xml");
+    let dae_manifest_path = unzipdir
+        .path()
+        .join("extra/org.fmi-standard.fmi-ls-dae/fmi-ls-manifest.xml");
 
     if dae_manifest_path.is_file() {
         eprintln!("    {green}Validating fmi-ls-dae manifest{green:#}");
