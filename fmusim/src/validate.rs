@@ -4,13 +4,9 @@ use anstream::eprintln;
 use anstyle::Style;
 use anyhow::Context;
 use fmi_rs::{
-    build_description::BuildDescription,
-    model_description::FMIMajorVersion,
-    schema::{
-        validate_build_description, validate_fmi2_model_description,
-        validate_fmi3_model_description,
-    },
-    zip::get_zip_contents,
+    build_description::BuildDescription, dae::DaeManifest, model_description::FMIMajorVersion, schema::{
+        validate_build_description, validate_dae_manifest, validate_fmi2_model_description, validate_fmi3_model_description,
+    }, zip::get_zip_contents,
 };
 
 use crate::prepare_fmu;
@@ -151,15 +147,34 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
 
     let build_description_path = unzipdir.path().join("sources/buildDescription.xml");
 
-    eprintln!("    {green}Validating build description{green:#}");
-
     if build_description_path.is_file() {
+        eprintln!("    {green}Validating build description{green:#}");
+
         let document =
             fs::read(&build_description_path).context("Failed to read build description")?;
 
         let mut problems = validate_build_description(&document);
 
         if let Err(e) = BuildDescription::from_file(build_description_path) {
+            problems.push(e.to_string());
+        }
+
+        for problem in problems {
+            eprintln!("{red}error{red:#}: {problem}");
+        }
+    }
+
+    let dae_manifest_path = unzipdir.path().join("extra/org.fmi-standard.fmi-ls-dae/fmi-ls-manifest.xml");
+
+    if dae_manifest_path.is_file() {
+        eprintln!("    {green}Validating fmi-ls-dae manifest{green:#}");
+
+        let document =
+            fs::read(&dae_manifest_path).context("Failed to read fmi-ls-dae manifest")?;
+
+        let mut problems = validate_dae_manifest(&document);
+
+        if let Err(e) = DaeManifest::from_file(dae_manifest_path) {
             problems.push(e.to_string());
         }
 
