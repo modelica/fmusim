@@ -50,6 +50,9 @@ jobs:
     - name: Set up Rust
       uses: dtolnay/rust-toolchain@stable
 
+    - name: Run Clippy
+      run: cargo clippy -p fmusim --all-targets -- -D warnings
+
     - name: Run tests
       run: cargo test -p fmusim -- --nocapture
 

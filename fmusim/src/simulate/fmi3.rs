@@ -28,8 +28,10 @@ use plotly::{
 
 use crate::{
     InterfaceType, SimulateArgs, SolverType,
-    simulate::{calculate_simulation_steps, split_time_intervals_indices},
+    simulate::{calculate_simulation_steps, split_time_intervals_ranges},
 };
+
+const MAX_PLOTS: usize = 8;
 
 pub fn simulate_fmu(
     args: &SimulateArgs,
@@ -126,6 +128,7 @@ pub fn simulate_fmu(
 
     let trajectories = Trajectories::new(model_description.clone(), output_variable_indices);
 
+    #[allow(clippy::arc_with_non_send_sync)]
     let recorder = Arc::new(Recorder::new(trajectories));
 
     let fixes_step_size = args.fixed_step_size.unwrap_or(output_interval);
@@ -275,7 +278,7 @@ pub fn plot_result(
         Mode::Lines
     };
 
-    for (i, variable) in trajectories.variables().enumerate() {
+    for (variable_index, variable) in trajectories.variables().take(MAX_PLOTS).enumerate() {
         let mut axis_title = variable.name.clone();
 
         if let Some(unit) = trajectories.model_description.get_unit(variable) {
@@ -320,7 +323,7 @@ pub fn plot_result(
         }
 
         // Set y-axis titles for subplots (Plotly uses y1, y2, y3... internally)
-        layout = match i {
+        layout = match variable_index {
             0 => layout.y_axis(y_axis),
             1 => layout.y_axis2(y_axis),
             2 => layout.y_axis3(y_axis),
@@ -334,7 +337,7 @@ pub fn plot_result(
 
         let time = trajectories.time.clone();
         let name = variable.name.clone();
-        let row = i + 1;
+        let row_index = variable_index + 1;
 
         if matches!(
             variable.variableType,
@@ -346,16 +349,26 @@ pub fn plot_result(
         let mut color_iter = COLORS.iter().cycle();
 
         if let Some(first_row) = trajectories.rows.first()
-            && let Some(value) = first_row.get(i)
+            && let Some(value) = first_row.get(variable_index)
         {
             let size = value.len();
 
+            let trajectory: Vec<Vec<f64>> = match trajectories
+                .rows
+                .iter()
+                .map(|row| row.get(variable_index).map(|v| v.as_f64()))
+                .collect()
+            {
+                Some(variable_values) => variable_values,
+                None => continue,
+            };
+
             for j in 0..size {
-                let scalar_values: Vec<f64> = trajectories
-                    .rows
-                    .iter()
-                    .map(|row| row[i].as_f64()[j])
-                    .collect();
+                let scalar_values: Vec<f64> =
+                    match trajectory.iter().map(|v| v.get(j).cloned()).collect() {
+                        Some(values) => values,
+                        None => continue,
+                    };
 
                 let name = if size > 1 {
                     format!("{}[{}]", name, j)
@@ -366,45 +379,53 @@ pub fn plot_result(
                 let current_color = color_iter.next().unwrap_or(&COLORS[0]);
 
                 if let Some(ref_trajectories) = ref_trajectories {
-                    let scalar_ref_values: Vec<f64> = ref_trajectories
+                    let scalar_ref_values: Option<Vec<f64>> = ref_trajectories
                         .rows
                         .iter()
-                        .map(|row| row[i].as_f64()[j])
+                        .map(|row| {
+                            row.get(variable_index)
+                                .map(|v| v.as_f64())
+                                .and_then(|v| v.get(j).cloned())
+                        })
                         .collect();
 
-                    let mut ref_trace =
-                        Scatter::new(ref_trajectories.time.clone(), scalar_ref_values)
-                            .name(name.clone());
+                    if let Some(scalar_ref_values) = scalar_ref_values {
+                        let mut ref_trace =
+                            Scatter::new(ref_trajectories.time.clone(), scalar_ref_values)
+                                .name(name.clone());
 
-                    let ref_line = Line::new().width(3.0).color(format!("{current_color}44"));
+                        let ref_line = Line::new().width(3.0).color(format!("{current_color}44"));
 
-                    ref_trace = ref_trace
-                        .x_axis("x")
-                        .y_axis(format!("y{row}"))
-                        .line(ref_line);
+                        ref_trace = ref_trace
+                            .x_axis("x")
+                            .y_axis(format!("y{row_index}"))
+                            .line(ref_line);
 
-                    plot.add_trace(ref_trace);
+                        plot.add_trace(ref_trace);
+                    }
                 }
 
-                for (start, end) in split_time_intervals_indices(&time) {
-                    let time_slice = &time[start..end];
-                    let values_slice = &scalar_values[start..end];
+                for range in split_time_intervals_ranges(&time) {
+                    if let Some(time_slice) = time.get(range.clone())
+                        && let Some(values_slice) = scalar_values.get(range)
+                    {
+                        let mut trace =
+                            Scatter::new(time_slice.to_owned(), values_slice.to_owned())
+                                .name(name.clone());
 
-                    let mut trace = Scatter::new(time_slice.to_owned(), values_slice.to_owned())
-                        .name(name.clone());
+                        // Use the shared x-axis ("x") for all subplots
+                        trace = trace
+                            .x_axis("x")
+                            .y_axis(format!("y{row_index}"))
+                            .line(Line::new().width(1.5).color(*current_color))
+                            .mode(mode.clone());
 
-                    // Use the shared x-axis ("x") for all subplots
-                    trace = trace
-                        .x_axis("x")
-                        .y_axis(format!("y{row}"))
-                        .line(Line::new().width(1.5).color(*current_color))
-                        .mode(mode.clone());
+                        if matches!(variable.variableType, VariableType::Boolean { .. }) {
+                            trace = trace.fill(Fill::ToZeroY).fill_color(NamedColor::AliceBlue);
+                        }
 
-                    if matches!(variable.variableType, VariableType::Boolean { .. }) {
-                        trace = trace.fill(Fill::ToZeroY).fill_color(NamedColor::AliceBlue);
+                        plot.add_trace(trace);
                     }
-
-                    plot.add_trace(trace);
                 }
             }
         }

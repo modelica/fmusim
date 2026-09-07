@@ -1,4 +1,4 @@
-use crate::simulate::{calculate_simulation_steps, split_time_intervals_indices};
+use crate::simulate::{calculate_simulation_steps, split_time_intervals_ranges};
 use crate::{InterfaceType, SimulateArgs, SolverType};
 use anyhow::{Context, bail};
 use fmi_rs::model_description::fmi2::{
@@ -93,6 +93,7 @@ pub fn simulate_fmu(
 
     let trajectories = Trajectories::new(model_description.clone(), output_variable_indices);
 
+    #[allow(clippy::arc_with_non_send_sync)]
     let recorder = Arc::new(Recorder::new(trajectories));
 
     let fixes_step_size = args.fixed_step_size.unwrap_or(output_interval);
@@ -204,7 +205,7 @@ pub fn plot_result(
         Mode::Lines
     };
 
-    for (i, variable) in trajectories.variables().enumerate() {
+    for (variable_index, variable) in trajectories.variables().take(8).enumerate() {
         let mut axis_title = variable.name.clone();
 
         if let Some(unit) = trajectories.model_description.get_unit(variable) {
@@ -249,7 +250,7 @@ pub fn plot_result(
         }
 
         // Set y-axis titles for subplots (Plotly uses y1, y2, y3... internally)
-        layout = match i {
+        layout = match variable_index {
             0 => layout.y_axis(y_axis),
             1 => layout.y_axis2(y_axis),
             2 => layout.y_axis3(y_axis),
@@ -263,17 +264,21 @@ pub fn plot_result(
 
         let time = trajectories.time.clone();
         let name = variable.name.clone();
-        let row = i + 1;
+        let row = variable_index + 1;
 
         if matches!(variable.variableType, VariableType::String { .. }) {
             continue;
         }
 
-        let values: Vec<f64> = trajectories
+        let values: Vec<f64> = match trajectories
             .rows
             .iter()
-            .map(|row| row[i].to_f64())
-            .collect();
+            .map(|row| row.get(variable_index).map(|v| v.to_f64()))
+            .collect()
+        {
+            Some(values) => values,
+            None => continue,
+        };
 
         let mut line = Line::new().width(1.5).color("#229AEB");
 
@@ -281,25 +286,26 @@ pub fn plot_result(
             line = line.shape(LineShape::Hv);
         }
 
-        for (start, end) in split_time_intervals_indices(&time) {
-            let time_slice = &time[start..end];
-            let values_slice = &values[start..end];
+        for range in split_time_intervals_ranges(&time) {
+            if let Some(time_slice) = time.get(range.clone())
+                && let Some(values_slice) = values.get(range)
+            {
+                let mut trace =
+                    Scatter::new(time_slice.to_owned(), values_slice.to_owned()).name(&name);
 
-            let mut trace =
-                Scatter::new(time_slice.to_owned(), values_slice.to_owned()).name(&name);
+                // Use the shared x-axis ("x") for all subplots
+                trace = trace
+                    .x_axis("x")
+                    .y_axis(format!("y{row}"))
+                    .line(line.clone())
+                    .mode(mode.clone());
 
-            // Use the shared x-axis ("x") for all subplots
-            trace = trace
-                .x_axis("x")
-                .y_axis(format!("y{row}"))
-                .line(line.clone())
-                .mode(mode.clone());
+                if matches!(variable.variableType, VariableType::Boolean { .. }) {
+                    trace = trace.fill(Fill::ToZeroY).fill_color(NamedColor::AliceBlue);
+                }
 
-            if matches!(variable.variableType, VariableType::Boolean { .. }) {
-                trace = trace.fill(Fill::ToZeroY).fill_color(NamedColor::AliceBlue);
+                plot.add_trace(trace);
             }
-
-            plot.add_trace(trace);
         }
     }
 

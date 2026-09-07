@@ -1,8 +1,9 @@
-use std::fs::read_to_string;
+use std::{fs::read_to_string, ops::Range, vec};
 
 use fmi_rs::model_description::{DefaultExperiment, FMIMajorVersion};
 
 use crate::{SimulateArgs, prepare_fmu};
+use itertools::Itertools;
 
 pub mod fmi2;
 pub mod fmi3;
@@ -104,50 +105,53 @@ pub fn simulate_config(config_file: &str) -> anyhow::Result<()> {
     simulate_fmu(&toml_args)
 }
 
-/// Returns a list of `(start_idx, end_idx)` index pairs for slicing.
-/// The first element at an event (first duplicate) is included in the prior slice.
-/// Intermediate duplicates are skipped, and the next slice starts at the last duplicate.
-pub fn split_time_intervals_indices(time_steps: &[f64]) -> Vec<(usize, usize)> {
-    if time_steps.is_empty() {
-        return vec![];
-    }
+/// Returns a list of Range<usize> for slicing.
+/// The first element at an event (first duplicate) is included in the prior range.
+/// Intermediate duplicates are skipped, and the next range starts at the last duplicate.
+pub fn split_time_intervals_ranges(time_steps: &[f64]) -> Vec<Range<usize>> {
+    let mut intervals = vec![];
 
-    let mut intervals = Vec::new();
-    let mut start_idx = 0;
-    let mut i = 0;
+    if let Some(start_time) = time_steps.first() {
+        let mut last_idx = 0usize;
+        let mut last_time = *start_time;
 
-    while i < time_steps.len() {
-        // Detect a sequence of duplicate timestamps
-        if i + 1 < time_steps.len() && time_steps[i] == time_steps[i + 1] {
-            let dup_start = i;
-            let mut dup_end = i + 1;
-
-            // Find the last index of this duplicate block
-            while dup_end + 1 < time_steps.len() && time_steps[dup_end + 1] == time_steps[i] {
-                dup_end += 1;
+        for (idx, (t0, t1)) in time_steps.iter().copied().tuple_windows().enumerate() {
+            if t0 == t1 {
+                if t0 != last_time {
+                    intervals.push(last_idx..idx + 1);
+                }
+                last_idx = idx + 1;
+                last_time = t0;
             }
-
-            // Exclusive upper bound including the first duplicate element
-            let end_idx = dup_start + 1;
-
-            if start_idx < end_idx {
-                intervals.push((start_idx, end_idx));
-            }
-
-            // Next interval starts at the last duplicate index
-            start_idx = dup_end;
-
-            // Jump past the duplicate block
-            i = dup_end + 1;
-        } else {
-            i += 1;
         }
-    }
 
-    // Push final remaining segment
-    if start_idx < time_steps.len() {
-        intervals.push((start_idx, time_steps.len()));
+        intervals.push(last_idx..time_steps.len());
     }
 
     intervals
+}
+
+#[cfg(test)]
+mod tests {
+    use super::split_time_intervals_ranges;
+    use std::ops::Range;
+
+    #[test]
+    fn split_time_intervals_ranges_handles_empty_and_single_step_inputs() {
+        assert_eq!(split_time_intervals_ranges(&[]), Vec::<Range<usize>>::new());
+        assert_eq!(split_time_intervals_ranges(&[0.0]), vec![0..1]);
+    }
+
+    #[test]
+    fn split_time_intervals_ranges_returns_one_range_without_events() {
+        assert_eq!(split_time_intervals_ranges(&[0.0, 1.0, 2.0]), vec![0..3]);
+    }
+
+    #[test]
+    fn split_time_intervals_ranges_splits_at_duplicate_times() {
+        assert_eq!(
+            split_time_intervals_ranges(&[0., 1., 2., 2., 2., 3., 4., 4., 5.]),
+            vec![0..3, 4..7, 7..9]
+        );
+    }
 }

@@ -23,7 +23,7 @@ unreachable = "deny"
 panic_in_result_fn = "deny"
 
 # Disallow implicit panicking operations
-# indexing_slicing = "deny"
+indexing_slicing = "deny"
 # arithmetic_side_effects = "deny" # Denies unchecked +, -, *, /, % operations
 
 # Additional safety lints for fallible operations
