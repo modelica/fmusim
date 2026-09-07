@@ -230,7 +230,7 @@ pub fn plot_result(
         "#999999", // Gray
     ];
 
-    let plot_height = 250 * trajectories.len().max(1);
+    let plot_height = 250usize.saturating_mul(trajectories.len().max(1));
 
     let grid_color = "rgba(211, 211, 211, 0.5)";
 
@@ -337,7 +337,7 @@ pub fn plot_result(
 
         let time = trajectories.time.clone();
         let name = variable.name.clone();
-        let row_index = variable_index + 1;
+        let row_index = variable_index.saturating_add(1);
 
         if matches!(
             variable.variableType,

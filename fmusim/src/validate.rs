@@ -104,7 +104,7 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
 
     let terminal_width = term_size::dimensions().map(|(w, _)| w).unwrap_or(120);
 
-    let max_width = terminal_width - 8;
+    let max_width = terminal_width.saturating_sub(8);
 
     for problem in problems.iter() {
         eprintln!("{red}error{red:#}: {bold}{}{bold:#}", problem.message);
@@ -120,8 +120,8 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
         for (j, range) in problem.range.iter().enumerate() {
             let start_pos = doc.text_pos_at(range.start);
             let end_pos = doc.text_pos_at(range.end);
-            let start_line = (start_pos.row - 1) as usize;
-            let end_line = (end_pos.row - 1) as usize;
+            let start_line = start_pos.row.saturating_sub(1) as usize;
+            let end_line = end_pos.row.saturating_sub(1) as usize;
 
             if j == 0 {
                 eprintln!("      {arrow}|{arrow:#}");
@@ -139,7 +139,7 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
                     };
 
                     let prefix = if i == start_line {
-                        format!("{arrow}{:>5}{arrow:#} {arrow}|{arrow:#} ", i + 1)
+                        format!("{arrow}{:>5}{arrow:#} {arrow}|{arrow:#} ", i.saturating_add(1))
                     } else {
                         format!("      {arrow}|{arrow:#} ")
                     };

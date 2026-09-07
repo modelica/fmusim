@@ -118,9 +118,9 @@ pub fn split_time_intervals_ranges(time_steps: &[f64]) -> Vec<Range<usize>> {
         for (idx, (t0, t1)) in time_steps.iter().copied().tuple_windows().enumerate() {
             if t0 == t1 {
                 if t0 != last_time {
-                    intervals.push(last_idx..idx + 1);
+                    intervals.push(last_idx..idx.saturating_add(1));
                 }
-                last_idx = idx + 1;
+                last_idx = idx.saturating_add(1);
                 last_time = t0;
             }
         }

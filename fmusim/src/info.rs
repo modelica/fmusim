@@ -110,7 +110,7 @@ pub fn show_fmu_info(fmu_file: &str) -> anyhow::Result<()> {
                 .max() // Get the maximum length
                 .unwrap_or(4); // Default to 4 if no variables or names are empty
 
-            let description_width = terminal_width.saturating_sub(name_width + 3);
+            let description_width = terminal_width.saturating_sub(name_width.saturating_add(3));
 
             let header = format!(
                 "{bold}{:<nw$}{bold:#} {} {bold}{:<dw$}{bold:#}",
@@ -124,9 +124,9 @@ pub fn show_fmu_info(fmu_file: &str) -> anyhow::Result<()> {
 
             println!(
                 "{}{}{}",
-                grid.horizontal.repeat(name_width + 1),
+                grid.horizontal.repeat(name_width.saturating_add(1)),
                 grid.cross,
-                grid.horizontal.repeat(description_width + 1)
+                grid.horizontal.repeat(description_width.saturating_add(1))
             );
 
             for variable in &model_description.modelVariables {
@@ -198,7 +198,7 @@ pub fn show_fmu_info(fmu_file: &str) -> anyhow::Result<()> {
                 .max() // Get the maximum length
                 .unwrap_or(4); // Default to 4 if no variables or names are empty
 
-            let description_width = terminal_width.saturating_sub(name_width + 3);
+            let description_width = terminal_width.saturating_sub(name_width.saturating_add(3));
 
             let header = format!(
                 "{bold}{:<nw$}{bold:#} {} {bold}{:<dw$}{bold:#}",
@@ -212,9 +212,9 @@ pub fn show_fmu_info(fmu_file: &str) -> anyhow::Result<()> {
 
             println!(
                 "{}{}{}",
-                grid.horizontal.repeat(name_width + 1),
+                grid.horizontal.repeat(name_width.saturating_add(1)),
                 grid.cross,
-                grid.horizontal.repeat(description_width + 1)
+                grid.horizontal.repeat(description_width.saturating_add(1))
             );
 
             for variable in &model_description.modelVariables {
