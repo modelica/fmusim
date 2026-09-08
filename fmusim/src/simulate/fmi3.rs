@@ -356,7 +356,7 @@ pub fn plot_result(
             let trajectory: Vec<Vec<f64>> = match trajectories
                 .rows
                 .iter()
-                .map(|row| row.get(variable_index).map(|v| v.as_f64()))
+                .map(|row| row.get(variable_index).and_then(|v| v.as_f64()))
                 .collect()
             {
                 Some(variable_values) => variable_values,
@@ -384,7 +384,7 @@ pub fn plot_result(
                         .iter()
                         .map(|row| {
                             row.get(variable_index)
-                                .map(|v| v.as_f64())
+                                .and_then(|v| v.as_f64())
                                 .and_then(|v| v.get(j).cloned())
                         })
                         .collect();

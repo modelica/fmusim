@@ -273,7 +273,7 @@ pub fn plot_result(
         let values: Vec<f64> = match trajectories
             .rows
             .iter()
-            .map(|row| row.get(variable_index).map(|v| v.to_f64()))
+            .map(|row| row.get(variable_index).and_then(|v| v.to_f64()))
             .collect()
         {
             Some(values) => values,
