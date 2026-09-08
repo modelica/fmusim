@@ -723,6 +723,8 @@ dependencies = [
 [[package]]
 name = "fmi-rs"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9a4a68355381ffd2f3edf63d96927153b473812ab8e35b9ee306b1802cb213b"
 dependencies = [
  "anyhow",
  "approx",
@@ -730,14 +732,12 @@ dependencies = [
  "cc",
  "colored",
  "csv",
- "fmi-rs",
  "itertools",
  "libc",
  "libloading",
  "quick-xml",
  "reqwest",
  "roxmltree",
- "rstest",
  "serde",
  "serde_with",
  "strum",

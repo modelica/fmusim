@@ -1,3 +1,0 @@
-[submodule "fmi-rs"]
-	path = fmi-rs
-	url = https://github.com/CATIA-Systems/fmi-rs.git

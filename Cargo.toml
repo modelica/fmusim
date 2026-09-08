@@ -9,9 +9,6 @@ version = "0.10.0"
 edition = "2024"
 license = "BSD-2-Clause"
 
-[workspace.dependencies]
-fmi-rs = { path = "fmi-rs", version = "0.1.0" }
-
 [workspace.lints.clippy]
 # Disallow explicit panicking mechanisms
 unwrap_used = "deny"
