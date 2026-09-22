@@ -2,27 +2,24 @@
 #![allow(clippy::expect_used)]
 #![allow(clippy::panic)]
 
-use std::{path::PathBuf, process::Command, sync::OnceLock};
+use std::{path::PathBuf, process::Command};
 
 use fmi_rs::test_fixtures::download_reference_fmus;
 use rstest::*;
 
-static REFERENCE_FMUS_DOWNLOADED: OnceLock<()> = OnceLock::new();
-
 #[fixture]
+#[once]
 pub fn workspace_root() -> PathBuf {
     let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .unwrap()
         .to_path_buf();
 
-    REFERENCE_FMUS_DOWNLOADED.get_or_init(|| {
-        let reference_fmus_dir = workspace_root.join("fmusim/tests/resources/Reference-FMUs");
+    let reference_fmus_dir = workspace_root.join("fmusim/tests/resources/Reference-FMUs");
 
-        if !reference_fmus_dir.exists() {
-            download_reference_fmus(&reference_fmus_dir).unwrap()
-        }
-    });
+    if !reference_fmus_dir.exists() {
+        download_reference_fmus(&reference_fmus_dir).unwrap()
+    }
 
     workspace_root
 }
@@ -42,9 +39,20 @@ pub fn temp_dir() -> PathBuf {
 
 pub fn run_fmusim(args: &[&str]) {
     let workspace_root = workspace_root();
-    let target_dir = if cfg!(debug_assertions) { "debug" } else { "release" };
-    let fmusim_binary = if cfg!(windows) { "fmusim.exe" } else { "fmusim" };
-    let fmusim_path = workspace_root.join("target").join(target_dir).join(fmusim_binary);
+    let target_dir = if cfg!(debug_assertions) {
+        "debug"
+    } else {
+        "release"
+    };
+    let fmusim_binary = if cfg!(windows) {
+        "fmusim.exe"
+    } else {
+        "fmusim"
+    };
+    let fmusim_path = workspace_root
+        .join("target")
+        .join(target_dir)
+        .join(fmusim_binary);
 
     let simulation_output = Command::new(&fmusim_path)
         .args(args)

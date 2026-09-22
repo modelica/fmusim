@@ -139,7 +139,10 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
                     };
 
                     let prefix = if i == start_line {
-                        format!("{arrow}{:>5}{arrow:#} {arrow}|{arrow:#} ", i.saturating_add(1))
+                        format!(
+                            "{arrow}{:>5}{arrow:#} {arrow}|{arrow:#} ",
+                            i.saturating_add(1)
+                        )
                     } else {
                         format!("      {arrow}|{arrow:#} ")
                     };

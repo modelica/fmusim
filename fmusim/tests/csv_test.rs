@@ -4,11 +4,14 @@ mod common;
 
 use common::{run_fmusim, temp_dir, workspace_root};
 use rstest::*;
-use std::{fs::read_to_string, path::PathBuf};
+use std::{
+    fs::read_to_string,
+    path::{Path, PathBuf},
+};
 
 #[rstest]
 #[cfg(not(target_os = "macos"))]
-fn test_input_interpolation_fmi2(workspace_root: PathBuf, temp_dir: PathBuf) {
+fn test_input_interpolation_fmi2(workspace_root: &Path, temp_dir: PathBuf) {
     let fmu_file = workspace_root.join("fmusim/tests/resources/Reference-FMUs/2.0/Feedthrough.fmu");
     let input_file =
         workspace_root.join("fmusim/tests/resources/fmi2/Feedthrough_interpolation_in.csv");
@@ -39,7 +42,7 @@ fn test_input_interpolation_fmi2(workspace_root: PathBuf, temp_dir: PathBuf) {
 }
 
 #[rstest]
-fn test_input_interpolation_fmi3(workspace_root: PathBuf, temp_dir: PathBuf) {
+fn test_input_interpolation_fmi3(workspace_root: &Path, temp_dir: PathBuf) {
     let fmu_file = workspace_root.join("fmusim/tests/resources/Reference-FMUs/3.0/Feedthrough.fmu");
     let input_file =
         workspace_root.join("fmusim/tests/resources/fmi3/Feedthrough_interpolation_in.csv");

@@ -2,14 +2,14 @@ mod common;
 
 use common::{run_fmusim, temp_dir, workspace_root};
 use rstest::*;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[rstest]
 #[cfg_attr(target_os = "macos", ignore)]
 #[case(2)]
 #[case(3)]
 fn test_serialize_fmu_state(
-    workspace_root: PathBuf,
+    workspace_root: &Path,
     temp_dir: PathBuf,
     #[case] fmi_major_version: u32,
 ) {
