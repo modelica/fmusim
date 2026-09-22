@@ -26,3 +26,6 @@ arithmetic_side_effects = "deny"
 # Additional safety lints for fallible operations
 out_of_bounds_indexing = "deny"
 string_slice = "deny" # Slicing strings can panic if cut on non-UTF-8 boundaries
+
+# [patch.crates-io]
+# fmi-rs = { path = "fmi-rs" }

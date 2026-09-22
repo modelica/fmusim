@@ -28,5 +28,8 @@ playground/
 # Mkdocs output
 site/
 
+# Local fmi-rs checkout
+/fmi-rs/
+
 # generated CLI documentation
 docs/reference.md
