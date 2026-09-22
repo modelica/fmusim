@@ -2,10 +2,12 @@
 #![allow(clippy::expect_used)]
 #![allow(clippy::panic)]
 
-use std::{path::PathBuf, process::Command};
+use std::{path::PathBuf, process::Command, sync::OnceLock};
 
 use fmi_rs::test_fixtures::download_reference_fmus;
 use rstest::*;
+
+static REFERENCE_FMUS_DOWNLOADED: OnceLock<()> = OnceLock::new();
 
 #[fixture]
 pub fn workspace_root() -> PathBuf {
@@ -14,11 +16,13 @@ pub fn workspace_root() -> PathBuf {
         .unwrap()
         .to_path_buf();
 
-    let reference_fmus_dir = workspace_root.join("fmusim/tests/resources/Reference-FMUs");
+    REFERENCE_FMUS_DOWNLOADED.get_or_init(|| {
+        let reference_fmus_dir = workspace_root.join("fmusim/tests/resources/Reference-FMUs");
 
-    if !reference_fmus_dir.exists() {
-        download_reference_fmus(&reference_fmus_dir).unwrap()
-    }
+        if !reference_fmus_dir.exists() {
+            download_reference_fmus(&reference_fmus_dir).unwrap()
+        }
+    });
 
     workspace_root
 }
