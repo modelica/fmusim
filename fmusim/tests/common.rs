@@ -38,7 +38,9 @@ pub fn temp_dir() -> PathBuf {
 
 pub fn run_fmusim(args: &[&str]) {
     let workspace_root = workspace_root();
-    let fmusim_path = workspace_root.join("target/debug/fmusim");
+    let target_dir = if cfg!(debug_assertions) { "debug" } else { "release" };
+    let fmusim_binary = if cfg!(windows) { "fmusim.exe" } else { "fmusim" };
+    let fmusim_path = workspace_root.join("target").join(target_dir).join(fmusim_binary);
 
     let simulation_output = Command::new(&fmusim_path)
         .args(args)
