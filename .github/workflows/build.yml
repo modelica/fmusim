@@ -7,19 +7,21 @@ env:
 on:
   push:
     branches: [ "main" ]
+    tags:
+      - "v*.*.*"
+      - "v*"
   pull_request:
     branches: [ "main" ]
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+# Grant contents:write so action-gh-release can create releases and upload assets
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+# Prevent concurrency conflicts between main branch builds and tag pushes
 concurrency:
-  group: "pages"
+  group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: false
 
 jobs:
@@ -77,6 +79,8 @@ jobs:
   docs:
     name: Build and deploy docs
     runs-on: ubuntu-latest
+    # Only run docs deployment on pushes to main (skips on tags and PRs)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -120,3 +124,32 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build]
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: Archive artifacts for release
+        run: |
+          mkdir release-assets
+          for dir in artifacts/*/; do
+            dirname=$(basename "$dir")
+            (cd "$dir" && zip -r "../../release-assets/${dirname}.zip" .)
+          done
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
