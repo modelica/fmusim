@@ -844,7 +844,7 @@ dependencies = [
 
 [[package]]
 name = "fmusim"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "anstream",
  "anstyle",
