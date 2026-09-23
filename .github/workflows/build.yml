@@ -79,8 +79,7 @@ jobs:
   docs:
     name: Build and deploy docs
     runs-on: ubuntu-latest
-    # Only run docs deployment on pushes to main (skips on tags and PRs)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: startsWith(github.ref, 'refs/tags/')
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
