@@ -22,6 +22,7 @@ zip = "8.6"
 anyhow = "1.0.104"
 clap-markdown = "0.1.5"
 itertools = "0.15.0"
+annotate-snippets = "0.12.16"
 
 [dev-dependencies]
 fmi-rs = { version = "0.2.0", features = ["test-fixtures"] }

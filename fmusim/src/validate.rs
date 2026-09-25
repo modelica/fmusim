@@ -1,18 +1,20 @@
 use std::{fs, vec};
 
+use annotate_snippets::{AnnotationKind, Level, Renderer, Snippet, renderer::DecorStyle};
 use anstream::eprintln;
 use anstyle::Style;
 use anyhow::Context;
 use fmi_rs::{
     build_description::BuildDescription,
     dae::DaeManifest,
-    model_description::FMIMajorVersion,
+    model_description::{FMIMajorVersion, ValidationError},
     schema::{
         validate_build_description, validate_dae_manifest, validate_fmi2_model_description,
         validate_fmi3_model_description,
     },
     zip::get_zip_contents,
 };
+use std::io::IsTerminal;
 
 use crate::prepare_fmu;
 
@@ -38,17 +40,41 @@ fn validate_zip_archive(fmu_file: &str) -> Vec<String> {
     problems
 }
 
+fn render_xml_error(source: &str, err: &ValidationError) {
+    let mut snippet = Snippet::source(source);
+
+    if !err.range.is_empty() {
+        snippet = snippet.path("modelDescription.xml");
+    }
+
+    for range in &err.range {
+        snippet = snippet.annotation(AnnotationKind::Primary.span(range.clone()));
+    }
+
+    let report = &[Level::ERROR.primary_title(&err.message).element(snippet)];
+
+    let mut renderer = if std::io::stderr().is_terminal() {
+        Renderer::styled().decor_style(DecorStyle::Unicode)
+    } else {
+        Renderer::plain()
+    };
+
+    let term_width = term_size::dimensions().map(|(w, _)| w).unwrap_or(120);
+
+    dbg!(term_width);
+
+    renderer = renderer.term_width(term_width);
+
+    anstream::eprintln!("{}", renderer.render(report));
+}
+
 pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
-    let bold = Style::new().bold();
     let red = Style::new()
         .bold()
         .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
     let green = Style::new()
         .bold()
         .fg_color(Some(anstyle::AnsiColor::BrightGreen.into()));
-    let arrow = Style::new()
-        .bold()
-        .fg_color(Some(anstyle::AnsiColor::Cyan.into()));
 
     eprintln!("    {green}Validating ZIP archive{green:#}");
 
@@ -85,72 +111,17 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
 
     let root = doc.root_element();
 
-    let mut problems = vec![];
-
-    match &fmi_major_version {
-        FMIMajorVersion::V2 => {
-            let model_description =
-                fmi_rs::model_description::fmi2::ModelDescription::from_node(&root)
-                    .context("Failed to parse model description")?;
-            problems.extend(model_description.validate());
-        }
-        FMIMajorVersion::V3 => {
-            let model_description =
-                fmi_rs::model_description::fmi3::ModelDescription::from_node(&root)
-                    .context("Failed to parse model description")?;
-            problems.extend(model_description.validate());
-        }
+    let problems = match &fmi_major_version {
+        FMIMajorVersion::V2 => fmi_rs::model_description::fmi2::ModelDescription::from_node(&root)
+            .context("Failed to parse model description")?
+            .validate(),
+        FMIMajorVersion::V3 => fmi_rs::model_description::fmi3::ModelDescription::from_node(&root)
+            .context("Failed to parse model description")?
+            .validate(),
     };
 
-    let terminal_width = term_size::dimensions().map(|(w, _)| w).unwrap_or(120);
-
-    let max_width = terminal_width.saturating_sub(8);
-
-    for problem in problems.iter() {
-        eprintln!("{red}error{red:#}: {bold}{}{bold:#}", problem.message);
-
-        if let Some(range) = problem.range.last() {
-            let start_pos = doc.text_pos_at(range.start);
-            eprintln!(
-                "     {arrow}-->{arrow:#} modelDescription.xml:{}:{}",
-                start_pos.row, start_pos.col
-            );
-        }
-
-        for (j, range) in problem.range.iter().enumerate() {
-            let start_pos = doc.text_pos_at(range.start);
-            let end_pos = doc.text_pos_at(range.end);
-            let start_line = start_pos.row.saturating_sub(1) as usize;
-            let end_line = end_pos.row.saturating_sub(1) as usize;
-
-            if j == 0 {
-                eprintln!("      {arrow}|{arrow:#}");
-            } else {
-                eprintln!("  {arrow}...{arrow:#}");
-            }
-
-            for (i, line) in text.lines().enumerate() {
-                if i >= start_line && i <= end_line {
-                    let text = if line.len() > max_width {
-                        let limit = max_width.saturating_sub(3);
-                        format!("{line:.limit$}{arrow}...{arrow:#}")
-                    } else {
-                        line.to_string()
-                    };
-
-                    let prefix = if i == start_line {
-                        format!(
-                            "{arrow}{:>5}{arrow:#} {arrow}|{arrow:#} ",
-                            i.saturating_add(1)
-                        )
-                    } else {
-                        format!("      {arrow}|{arrow:#} ")
-                    };
-                    eprintln!("{}{}", prefix, text);
-                }
-            }
-            eprintln!("      {arrow}|{arrow:#}");
-        }
+    for problem in &problems {
+        render_xml_error(&text, problem);
     }
 
     let build_description_path = unzipdir.path().join("sources/buildDescription.xml");
