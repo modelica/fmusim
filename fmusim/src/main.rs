@@ -1,5 +1,6 @@
 #![allow(non_camel_case_types, non_snake_case, non_upper_case_globals)]
 mod build;
+mod config;
 mod info;
 mod simulate;
 mod validate;
@@ -107,6 +108,15 @@ enum Commands {
     },
     /// Simulate an FMU
     Simulate(SimulateArgs),
+    /// Generate a simulation configuration file from an FMU
+    #[command(name = "generate-config")]
+    GenerateConfig {
+        /// Path to the FMU file
+        fmu_file: String,
+        /// Path to write the configuration file (default: stdout)
+        #[arg(long)]
+        config_file: Option<String>,
+    },
     /// Simulate an FMU using a configuration file
     #[command(
         long_about = "Load simulation configuration from a TOML file with the same parameters as the simulate command.\n\n\
@@ -233,8 +243,8 @@ pub struct SimulateArgs {
     start_values: Vec<(String, String)>,
 
     /// Record a specific variable
-    #[arg(long)]
-    output_variable: Vec<String>,
+    #[arg(long = "output-variable")]
+    output_variables: Vec<String>,
 
     /// Allow early return
     #[arg(long)]
@@ -339,6 +349,10 @@ fn main() -> ExitCode {
             .with_context(|| format!("Failed to extract FMU archive {fmu_file} to {target_dir}")),
         Commands::Validate { fmu_file } => validate::validate_fmu(fmu_file),
         Commands::Simulate(args) => simulate::simulate_fmu(args),
+        Commands::GenerateConfig {
+            fmu_file,
+            config_file: output,
+        } => config::generate_config(fmu_file, output.as_deref()),
         Commands::SimulateConfig { config_file } => simulate::simulate_config(config_file),
         Commands::Build(args) => build::build_platform_binary(args),
         Commands::MarkdownHelp { output_file } => {
@@ -353,14 +367,23 @@ fn main() -> ExitCode {
         }
     };
 
-    let red = Style::new()
-        .bold()
-        .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
-
     match result {
         Ok(()) => ExitCode::SUCCESS,
-        Err(e) => {
-            eprintln!("{red}error{red:#}: {e:#}");
+        Err(err) => {
+            let mut chain = err.chain();
+            let red = Style::new()
+                .bold()
+                .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
+            if let Some(primary) = chain.next() {
+                eprintln!("{red}error{red:#}: {primary:#}");
+            }
+            let causes: Vec<_> = chain.collect();
+            if !causes.is_empty() {
+                eprintln!("\nCaused by:");
+                for (i, cause) in causes.iter().enumerate() {
+                    eprintln!("  {:>2}: {}", i.saturating_add(1), cause);
+                }
+            }
             ExitCode::FAILURE
         }
     }
@@ -392,7 +415,13 @@ fn list_fmu_contents(fmu_file: &str) -> anyhow::Result<()> {
 fn prepare_fmu<P: AsRef<Path>>(fmu_path: P) -> anyhow::Result<(TempDir, PathBuf, FMIMajorVersion)> {
     let unzipdir = TempDir::new().context("Failed to create temporary directory")?;
 
-    extract_zip_archive(fmu_path, &unzipdir).context("Failed to extract FMU")?;
+    extract_zip_archive(&fmu_path, &unzipdir).with_context(|| {
+        format!(
+            "Failed to extract '{}' to '{}'",
+            fmu_path.as_ref().display(),
+            unzipdir.path().display()
+        )
+    })?;
 
     let xml_path = unzipdir.path().join("modelDescription.xml");
 

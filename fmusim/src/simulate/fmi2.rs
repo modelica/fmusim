@@ -28,7 +28,7 @@ pub fn simulate_fmu(
 ) -> anyhow::Result<()> {
     let model_description = Arc::new(ModelDescription::from_path(xml_path)?);
 
-    let output_variable_indices: Vec<usize> = if args.output_variable.is_empty() {
+    let output_variable_indices: Vec<usize> = if args.output_variables.is_empty() {
         model_description
             .modelVariables
             .iter()
@@ -37,7 +37,7 @@ pub fn simulate_fmu(
             .map(|(i, _v)| i)
             .collect()
     } else {
-        args.output_variable
+        args.output_variables
             .iter()
             .map(|name| model_description.variable_index_by_name(name))
             .collect::<Result<Vec<_>, _>>()?

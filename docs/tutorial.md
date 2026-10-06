@@ -155,6 +155,26 @@ nextEventTime=0) -> fmi3OK
 
     Run `fmusim simulate --help` to get a full list of all available options.
 
+## Generate a simulation configuration
+
+You can let fmusim create a configuration file with default parameters for the simulation.
+
+```console
+$ fmusim generate-config BouncingBall.fmu --config-file BouncingBall_config.toml
+```
+
+This creates a configuration file with default start values defined by the model that can be uncommented.
+
+The generated file can then be used directly:
+
+```console
+$ fmusim simulate-config BouncingBall_config.toml
+```
+
+!!! tip
+
+    Paths in the generated config are relative to the config file, so the FMU can be moved with the config without changing the TOML file.
+
 ## Validate an FMU
 
 ```console

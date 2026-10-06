@@ -1,0 +1,25 @@
+fmu_file = "{{ simulate_args.fmu_file }}"
+
+# input_file = {{ filename }}_in.csv
+# output_file = {{ filename }}_out.csv
+# log_file = {{ filename }}_log.txt
+
+# start_time = {{ start_time }}
+# stop_time = {{ stop_time }}
+# tolerance = {{ tolerance }}
+# output_interval = {{ output_interval }}
+
+# log_fmi_calls = true
+# show_plot = true
+
+# start_values = [
+{%- for (name, value) in simulate_args.start_values %}
+# ["{{ name }}", "{{ value }}"],{% if let Some(description) = descriptions.get(name.as_str()) %} # {{ description }}{% endif %}
+{%- endfor %}
+# ]
+
+# output_variables = [
+{%- for name in simulate_args.output_variables %}
+# "{{ name }}",{% if let Some(description) = descriptions.get(name.as_str()) %} # {{ description }}{% endif %}
+{%- endfor %}
+# ]
