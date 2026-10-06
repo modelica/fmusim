@@ -861,6 +861,7 @@ dependencies = [
  "anstream",
  "anstyle",
  "anyhow",
+ "askama 0.16.1",
  "clap",
  "clap-markdown",
  "clap_complete",
@@ -869,6 +870,7 @@ dependencies = [
  "fmi-rs",
  "itertools",
  "libloading",
+ "pathdiff",
  "plotly",
  "roxmltree",
  "rstest",
@@ -1641,6 +1643,12 @@ dependencies = [
  "smallvec",
  "windows-link",
 ]
+
+[[package]]
+name = "pathdiff"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df94ce210e5bc13cb6651479fa48d14f601d9858cfe0467f43ae157023b938d3"
 
 [[package]]
 name = "pbkdf2"

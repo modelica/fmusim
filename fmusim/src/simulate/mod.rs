@@ -1,5 +1,6 @@
-use std::{fs::read_to_string, ops::Range, vec};
+use std::{fs::read_to_string, ops::Range, path::Path, vec};
 
+use anyhow::Context;
 use fmi_rs::model_description::{DefaultExperiment, FMIMajorVersion};
 
 use crate::{SimulateArgs, prepare_fmu};
@@ -101,7 +102,29 @@ pub fn simulate_fmu(args: &SimulateArgs) -> anyhow::Result<()> {
 
 pub fn simulate_config(config_file: &str) -> anyhow::Result<()> {
     let content = read_to_string(config_file)?;
-    let toml_args = toml::from_str::<SimulateArgs>(&content)?;
+    let mut toml_args = toml::from_str::<SimulateArgs>(&content)?;
+
+    let config_dir = Path::new(config_file)
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    let fmu_path = Path::new(&toml_args.fmu_file);
+    let resolved_fmu_path = if fmu_path.is_absolute() {
+        fmu_path.to_path_buf()
+    } else {
+        config_dir.join(fmu_path)
+    };
+    toml_args.fmu_file = resolved_fmu_path
+        .canonicalize()
+        .with_context(|| {
+            format!(
+                "Failed to resolve FMU path '{}' relative to configuration file '{}'",
+                toml_args.fmu_file, config_file
+            )
+        })?
+        .to_string_lossy()
+        .into_owned();
+
     simulate_fmu(&toml_args)
 }
 
