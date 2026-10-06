@@ -381,7 +381,7 @@ fn main() -> ExitCode {
             if !causes.is_empty() {
                 eprintln!("\nCaused by:");
                 for (i, cause) in causes.iter().enumerate() {
-                    eprintln!("  {:>2}: {}", i + 1, cause);
+                    eprintln!("  {:>2}: {}", i.saturating_add(1), cause);
                 }
             }
             ExitCode::FAILURE
