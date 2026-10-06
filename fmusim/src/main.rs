@@ -367,14 +367,23 @@ fn main() -> ExitCode {
         }
     };
 
-    let red = Style::new()
-        .bold()
-        .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
-
     match result {
         Ok(()) => ExitCode::SUCCESS,
-        Err(e) => {
-            eprintln!("{red}error{red:#}: {e:#}");
+        Err(err) => {
+            let mut chain = err.chain();
+            let red = Style::new()
+                .bold()
+                .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
+            if let Some(primary) = chain.next() {
+                eprintln!("{red}error{red:#}: {primary:#}");
+            }
+            let causes: Vec<_> = chain.collect();
+            if !causes.is_empty() {
+                eprintln!("\nCaused by:");
+                for (i, cause) in causes.iter().enumerate() {
+                    eprintln!("  {:>2}: {}", i + 1, cause);
+                }
+            }
             ExitCode::FAILURE
         }
     }
