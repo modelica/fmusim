@@ -12,7 +12,8 @@ use crate::common::run_fmusim;
 
 #[rstest]
 fn test_generate_config_for_resource_fmu(workspace_root: &Path) {
-    let fmu_path = workspace_root.join("fmusim/tests/resources/Reference-FMUs/3.0/BouncingBall.fmu");
+    let fmu_path =
+        workspace_root.join("fmusim/tests/resources/Reference-FMUs/3.0/BouncingBall.fmu");
     let config_path = workspace_root.join("target/tmp/tests/BouncingBall_config.toml");
 
     if let Some(parent) = config_path.parent() {

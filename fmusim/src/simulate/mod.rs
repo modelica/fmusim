@@ -1,6 +1,5 @@
 use std::{fs::read_to_string, ops::Range, path::Path, vec};
 
-use anyhow::Context;
 use fmi_rs::model_description::{DefaultExperiment, FMIMajorVersion};
 
 use crate::{SimulateArgs, prepare_fmu};
@@ -100,6 +99,15 @@ pub fn simulate_fmu(args: &SimulateArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn resolve_config_path(config_dir: &Path, path: &str) -> String {
+    let path = Path::new(path);
+    if path.is_absolute() {
+        path.to_string_lossy().into_owned()
+    } else {
+        config_dir.join(path).to_string_lossy().into_owned()
+    }
+}
+
 pub fn simulate_config(config_file: &str) -> anyhow::Result<()> {
     let content = read_to_string(config_file)?;
     let mut toml_args = toml::from_str::<SimulateArgs>(&content)?;
@@ -108,22 +116,38 @@ pub fn simulate_config(config_file: &str) -> anyhow::Result<()> {
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty())
         .unwrap_or(Path::new("."));
-    let fmu_path = Path::new(&toml_args.fmu_file);
-    let resolved_fmu_path = if fmu_path.is_absolute() {
-        fmu_path.to_path_buf()
-    } else {
-        config_dir.join(fmu_path)
-    };
-    toml_args.fmu_file = resolved_fmu_path
-        .canonicalize()
-        .with_context(|| {
-            format!(
-                "Failed to resolve FMU path '{}' relative to configuration file '{}'",
-                toml_args.fmu_file, config_file
-            )
-        })?
-        .to_string_lossy()
-        .into_owned();
+
+    toml_args.fmu_file = resolve_config_path(config_dir, &toml_args.fmu_file);
+
+    toml_args.log_file = toml_args
+        .log_file
+        .as_ref()
+        .map(|path| resolve_config_path(config_dir, path));
+
+    toml_args.input_file = toml_args
+        .input_file
+        .as_ref()
+        .map(|path| resolve_config_path(config_dir, path));
+
+    toml_args.output_file = toml_args
+        .output_file
+        .as_ref()
+        .map(|path| resolve_config_path(config_dir, path));
+
+    toml_args.reference_file = toml_args
+        .reference_file
+        .as_ref()
+        .map(|path| resolve_config_path(config_dir, path));
+
+    toml_args.initial_fmu_state_file = toml_args
+        .initial_fmu_state_file
+        .as_ref()
+        .map(|path| resolve_config_path(config_dir, path));
+
+    toml_args.final_fmu_state_file = toml_args
+        .final_fmu_state_file
+        .as_ref()
+        .map(|path| resolve_config_path(config_dir, path));
 
     simulate_fmu(&toml_args)
 }
