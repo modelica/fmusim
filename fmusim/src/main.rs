@@ -406,7 +406,13 @@ fn list_fmu_contents(fmu_file: &str) -> anyhow::Result<()> {
 fn prepare_fmu<P: AsRef<Path>>(fmu_path: P) -> anyhow::Result<(TempDir, PathBuf, FMIMajorVersion)> {
     let unzipdir = TempDir::new().context("Failed to create temporary directory")?;
 
-    extract_zip_archive(fmu_path, &unzipdir).context("Failed to extract FMU")?;
+    extract_zip_archive(&fmu_path, &unzipdir).with_context(|| {
+        format!(
+            "Failed to extract '{}' to '{}'",
+            fmu_path.as_ref().display(),
+            unzipdir.path().display()
+        )
+    })?;
 
     let xml_path = unzipdir.path().join("modelDescription.xml");
 
