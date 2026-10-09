@@ -1,0 +1,13 @@
+[package]
+name = "bouncing-ball"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+
+[lib]
+crate-type = ["cdylib"]
+
+[lints]
+workspace = true

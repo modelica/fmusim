@@ -1,5 +1,5 @@
 [workspace]
-members = [
+members = ["bouncing-ball",
     "fmusim",
 ]
 resolver = "3"
@@ -27,5 +27,5 @@ arithmetic_side_effects = "deny"
 out_of_bounds_indexing = "deny"
 string_slice = "deny" # Slicing strings can panic if cut on non-UTF-8 boundaries
 
-# [patch.crates-io]
-# fmi-rs = { path = "fmi-rs" }
+[patch.crates-io]
+fmi-rs = { path = "fmi-rs" }
