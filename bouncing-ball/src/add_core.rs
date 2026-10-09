@@ -1,33 +1,42 @@
 pub struct Adder {
-    value: i32,
+    value: f64,
 }
 
 impl Adder {
-    pub fn new(initial: i32) -> Self {
+    pub fn new(initial: f64) -> Self {
         Self { value: initial }
     }
 
-    pub fn add(&mut self, n: i32) {
+    pub fn add(&mut self, n: f64) {
         self.value += n;
     }
 
-    pub fn value(&self) -> i32 {
+    pub fn value(&self) -> f64 {
         self.value
     }
 }
 
-pub fn adder_create(initial: i32) -> *mut Adder {
+pub fn adder_create(initial: f64) -> *mut Adder {
     Box::into_raw(Box::new(Adder::new(initial)))
 }
 
-pub unsafe fn adder_add(ptr: *mut Adder, n: i32) {
+pub unsafe fn adder_add(ptr: *mut Adder, n: f64) {
     if let Some(adder) = unsafe { ptr.as_mut() } {
         adder.add(n);
     }
 }
 
-pub unsafe fn adder_value(ptr: *const Adder) -> i32 {
-    unsafe { ptr.as_ref().map(Adder::value).unwrap_or(0) }
+/// Writes the adder's current value into every element of `out[0..len]`.
+pub unsafe fn adder_value(ptr: *const Adder, out: *mut f64, len: i32) {
+    if out.is_null() || len <= 0 {
+        return;
+    }
+    let value = match unsafe { ptr.as_ref() } {
+        Some(adder) => adder.value(),
+        None => return,
+    };
+    let out = unsafe { std::slice::from_raw_parts_mut(out, len as usize) };
+    out.fill(value);
 }
 
 pub unsafe fn adder_destroy(ptr: *mut Adder) {
