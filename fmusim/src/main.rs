@@ -12,6 +12,7 @@ use clap::{Args, CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use crash_handler::{CrashEventResult, CrashHandler, make_crash_event};
 use fmi_rs::{
+    fmi3,
     model_description::{FMIMajorVersion, peek_fmi_major_version},
     zip::{create_zip_archive, extract_zip_archive, get_zip_contents},
 };
@@ -30,6 +31,15 @@ enum InterfaceType {
     CoSimulation,
 }
 
+impl From<LibraryKind> for fmi3::LibraryKind {
+    fn from(val: LibraryKind) -> Self {
+        match val {
+            LibraryKind::Native => fmi3::LibraryKind::Native,
+            LibraryKind::Wasm32 => fmi3::LibraryKind::Wasm32,
+        }
+    }
+}
+
 #[derive(ValueEnum, Clone, Debug, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 enum SolverType {
@@ -40,6 +50,12 @@ enum SolverType {
     Cvode,
     #[value(name = "ida")]
     Ida,
+}
+
+#[derive(ValueEnum, Clone, Debug, Deserialize)]
+enum LibraryKind {
+    Native,
+    Wasm32,
 }
 
 fn parse_start_value(s: &str) -> Result<(String, String), String> {
@@ -285,6 +301,10 @@ pub struct SimulateArgs {
     /// File to write the serialized FMU state to
     #[arg(long)]
     final_fmu_state_file: Option<String>,
+
+    /// The library kind to use
+    #[arg(long, value_enum)]
+    library_kind: Option<LibraryKind>,
 }
 
 #[derive(Debug, Args)]

@@ -1,6 +1,9 @@
 [workspace]
-members = ["bouncing-ball",
+members = [
+    "bouncing-ball",
     "fmusim",
+    "fmi-rs",
+    "fmi-rs-macros",
 ]
 resolver = "3"
 
