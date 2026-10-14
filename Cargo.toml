@@ -3,7 +3,7 @@ members = [
     "bouncing-ball",
     "fmusim",
     "fmi-rs",
-    "fmi-rs-macros",
+    "fmi-rs/fmi-rs-macros",
 ]
 resolver = "3"
 
