@@ -270,6 +270,10 @@ pub struct SimulateArgs {
     #[arg(long)]
     event_mode_used: bool,
 
+    /// FMU is executed in interactive mode
+    #[arg(long)]
+    visible: bool,
+
     /// Enable FMU looging
     #[arg(long)]
     logging_on: bool,
