@@ -33,3 +33,6 @@ site/
 
 # generated CLI documentation
 docs/reference.md
+
+# agent configuration
+AGENTS.md

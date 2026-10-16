@@ -85,6 +85,11 @@ pub fn simulate_fmu(
     let settings = SimulationSettings {
         unzipdir: unzipdir.path().to_path_buf(),
         model_description: model_description.clone(),
+        library_kind: args
+            .library_kind
+            .clone()
+            .unwrap_or(crate::LibraryKind::Native)
+            .into(),
         enable_dae: args.enable_dae,
         start_time,
         stop_time,
@@ -99,6 +104,7 @@ pub fn simulate_fmu(
         input_file: args.input_file.as_ref().map(PathBuf::from),
         early_return_allowed: args.early_return_allowed,
         event_mode_used: args.event_mode_used,
+        visible: args.visible,
         logging_on: args.logging_on,
         log_file: args.log_file.as_ref().map(PathBuf::from),
         initial_fmu_state_file: args.initial_fmu_state_file.as_ref().map(PathBuf::from),
