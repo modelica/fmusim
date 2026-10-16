@@ -1233,38 +1233,11 @@ dependencies = [
 
 [[package]]
 name = "fmi-rs"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "627afad99bd6c256fc065925979cd245ad253362fb70f37d82dd7ad958c37b1f"
-dependencies = [
- "anyhow",
- "approx",
- "askama 0.16.1",
- "cc",
- "colored",
- "csv",
- "itertools 0.15.0",
- "libc",
- "libloading",
- "quick-xml 0.36.2",
- "reqwest",
- "roxmltree",
- "serde",
- "serde_with",
- "strum",
- "tempfile",
- "thiserror 2.0.20",
- "url",
- "windows-sys 0.61.2",
- "zip 8.6.0",
-]
-
-[[package]]
-name = "fmi-rs"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd5318573ef65e2ecf64e2cc279a6c1ebd084d228333049b7dfeb83e9e8939f6"
 dependencies = [
+ "anyhow",
  "approx",
  "askama 0.16.1",
  "cc",
@@ -1274,7 +1247,8 @@ dependencies = [
  "itertools 0.15.0",
  "libc",
  "libloading",
- "quick-xml 0.42.0",
+ "quick-xml",
+ "reqwest",
  "roxmltree",
  "serde",
  "strum",
@@ -1312,8 +1286,7 @@ dependencies = [
  "clap_complete",
  "crash-handler",
  "csv",
- "fmi-rs 0.2.0",
- "fmi-rs 0.3.0",
+ "fmi-rs",
  "itertools 0.15.0",
  "libloading",
  "pathdiff",
@@ -2471,16 +2444,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
-]
-
-[[package]]
-name = "quick-xml"
-version = "0.36.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7649a7b4df05aed9ea7ec6f628c67c9953a43869b8bc50929569b2999d443fe"
-dependencies = [
- "memchr",
- "serde",
 ]
 
 [[package]]
