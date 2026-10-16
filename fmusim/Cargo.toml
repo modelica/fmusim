@@ -14,7 +14,7 @@ clap_complete = "4.6.11"
 clap-markdown = "0.1.5"
 csv = "1.4.0"
 crash-handler = "0.8"
-fmi-rs = { version = "0.3.0", features = ["schema", "sundials", "wasm", "test-fixtures"] }
+fmi-rs = { version = "0.3.1", features = ["schema", "sundials", "wasm", "test-fixtures"] }
 itertools = "0.15.0"
 libloading = "0.9.0"
 pathdiff = "0.2"

@@ -1233,9 +1233,9 @@ dependencies = [
 
 [[package]]
 name = "fmi-rs"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd5318573ef65e2ecf64e2cc279a6c1ebd084d228333049b7dfeb83e9e8939f6"
+checksum = "7884211656fe9d7fea6670b25ece5657b55ad370896824c1951f020a17e3b527"
 dependencies = [
  "anyhow",
  "approx",
@@ -1263,9 +1263,9 @@ dependencies = [
 
 [[package]]
 name = "fmi-rs-macros"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26d31562329fb43e83802d24db6b147f699dc49c2301dd6eab8ea10889d964f2"
+checksum = "480cb580f9688b3aaa10b3fb8778104fce399c0b53261d3d409c09b81b7d8b63"
 dependencies = [
  "proc-macro2",
  "quote",
