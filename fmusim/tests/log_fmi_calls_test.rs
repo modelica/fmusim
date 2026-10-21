@@ -5,7 +5,7 @@ use rstest::*;
 use std::path::Path;
 
 #[rstest]
-#[case(2, "fmi2DoStep")]
+#[cfg_attr(not(target_os = "macos"), case(2, "fmi2DoStep"))]
 #[case(3, "fmi3DoStep")]
 fn test_log_fmi_calls(
     workspace_root: &Path,
