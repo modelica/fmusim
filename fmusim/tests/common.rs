@@ -58,7 +58,7 @@ fn fmusim_command() -> (PathBuf, Command) {
     (workspace_root, command)
 }
 
-pub fn run_fmusim_output(args: &[&str]) -> std::process::Output {
+pub fn run_fmusim(args: &[&str]) -> std::process::Output {
     let (workspace_root, mut command) = fmusim_command();
     let simulation_output = command
         .args(args)
@@ -76,8 +76,4 @@ pub fn run_fmusim_output(args: &[&str]) -> std::process::Output {
     }
 
     simulation_output
-}
-
-pub fn run_fmusim(args: &[&str]) {
-    run_fmusim_output(args);
 }

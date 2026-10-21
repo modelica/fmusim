@@ -1,6 +1,6 @@
 mod common;
 
-use common::{run_fmusim_output, workspace_root};
+use common::{run_fmusim, workspace_root};
 use rstest::*;
 use std::path::Path;
 
@@ -24,7 +24,7 @@ fn test_log_fmi_calls(
         "--output-interval=0.1",
     ];
 
-    let without_logging = run_fmusim_output(&base_args);
+    let without_logging = run_fmusim(&base_args);
     let stderr_without = String::from_utf8_lossy(&without_logging.stderr);
     assert!(
         !stderr_without.contains("[FMI]"),
@@ -35,7 +35,7 @@ fn test_log_fmi_calls(
         "expected no {do_step_call} log without --log-fmi-calls, got stderr:\n{stderr_without}"
     );
 
-    let with_logging = run_fmusim_output(&[
+    let with_logging = run_fmusim(&[
         "simulate",
         &fmu,
         "--log-fmi-calls",
