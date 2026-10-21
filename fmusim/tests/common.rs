@@ -37,7 +37,7 @@ pub fn temp_dir() -> PathBuf {
     temp_path
 }
 
-pub fn run_fmusim(args: &[&str]) {
+fn fmusim_command() -> (PathBuf, Command) {
     let workspace_root = workspace_root();
     let target_dir = if cfg!(debug_assertions) {
         "debug"
@@ -54,7 +54,13 @@ pub fn run_fmusim(args: &[&str]) {
         .join(target_dir)
         .join(fmusim_binary);
 
-    let simulation_output = Command::new(&fmusim_path)
+    let command = Command::new(&fmusim_path);
+    (workspace_root, command)
+}
+
+pub fn run_fmusim_output(args: &[&str]) -> std::process::Output {
+    let (workspace_root, mut command) = fmusim_command();
+    let simulation_output = command
         .args(args)
         .current_dir(workspace_root)
         .output()
@@ -68,4 +74,10 @@ pub fn run_fmusim(args: &[&str]) {
             String::from_utf8_lossy(&simulation_output.stderr)
         );
     }
+
+    simulation_output
+}
+
+pub fn run_fmusim(args: &[&str]) {
+    run_fmusim_output(args);
 }
