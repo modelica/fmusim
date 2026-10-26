@@ -227,17 +227,17 @@ fn render_document(doc: &PlotDocument) -> anyhow::Result<String> {
     const axes = [
       {{
         scale: "x",
-        stroke: "#d3d3d3",
+        stroke: "#000",
         size: isBottom ? 36 : 0,
         show: true,
-        grid: {{ show: true, stroke: "#d3d3d380" }},
+        grid: {{ show: true, stroke: "#d3d3d380", width: 1 }},
         ticks: {{ show: isBottom }},
         values: isBottom ? undefined : () => [],
         label: isBottom ? "time [s]" : "",
       }},
       {{
-        stroke: "#d3d3d3",
-        grid: {{ show: true, stroke: "#d3d3d380" }},
+        stroke: "#000",
+        grid: {{ show: true, stroke: "#d3d3d380", width: 1 }},
         label: panel.title,
         size: 70,
         ...(panel.y_values && panel.y_labels
