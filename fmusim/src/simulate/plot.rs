@@ -133,7 +133,7 @@ fn render_document(doc: &PlotDocument) -> anyhow::Result<String> {
   <style>
     body {{ font-family: system-ui, sans-serif; margin: 0; padding: 12px; background: #fff; }}
     h1 {{ font-size: 1.1rem; font-weight: 600; margin: 0 0 12px 0; }}
-    #charts {{ display: flex; flex-direction: column; gap: 8px; }}
+    #charts {{ display: flex; flex-direction: column; gap: 0; }}
     .chart-wrap {{ width: 100%; }}
   </style>
 </head>
@@ -145,16 +145,41 @@ fn render_document(doc: &PlotDocument) -> anyhow::Result<String> {
   <script>
 (function () {{
   const doc = JSON.parse(document.getElementById("plot-data").textContent);
-  const sync = uPlot.sync("fmusim");
+  const syncKey = "fmusim";
   const charts = document.getElementById("charts");
   const panelHeight = 220;
   const paths = uPlot.paths;
+  const panelCount = doc.panels.length;
 
   function nullsToUplot(arr) {{
     return arr.map(v => (v === null ? null : v));
   }}
 
+  function sharedXRange(panels) {{
+    let min = Infinity;
+    let max = -Infinity;
+    for (const panel of panels) {{
+      for (const v of panel.x) {{
+        if (v != null && (!doc.log_x || v > 0)) {{
+          min = Math.min(min, v);
+          max = Math.max(max, v);
+        }}
+      }}
+    }}
+    if (!Number.isFinite(min) || !Number.isFinite(max)) {{
+      return null;
+    }}
+    if (min === max) {{
+      const pad = Math.abs(min) * 0.01 + 1e-9;
+      return [min - pad, max + pad];
+    }}
+    return [min, max];
+  }}
+
+  const sharedX = sharedXRange(doc.panels);
+
   doc.panels.forEach((panel, pi) => {{
+    const isBottom = pi === panelCount - 1;
     const wrap = document.createElement("div");
     wrap.className = "chart-wrap";
     const target = document.createElement("div");
@@ -189,6 +214,7 @@ fn render_document(doc: &PlotDocument) -> anyhow::Result<String> {
       x: {{
         time: false,
         ...(doc.log_x ? {{ distr: 3 }} : {{}}),
+        ...(sharedX ? {{ range: sharedX }} : {{}}),
       }},
       y: {{
         auto: panel.y_min === null && panel.y_max === null,
@@ -200,9 +226,14 @@ fn render_document(doc: &PlotDocument) -> anyhow::Result<String> {
 
     const axes = [
       {{
+        scale: "x",
         stroke: "#d3d3d3",
+        size: isBottom ? 36 : 0,
+        show: true,
         grid: {{ show: true, stroke: "#d3d3d380" }},
-        label: pi === doc.panels.length - 1 ? "time [s]" : "",
+        ticks: {{ show: isBottom }},
+        values: isBottom ? undefined : () => [],
+        label: isBottom ? "time [s]" : "",
       }},
       {{
         stroke: "#d3d3d3",
@@ -224,7 +255,16 @@ fn render_document(doc: &PlotDocument) -> anyhow::Result<String> {
       scales,
       axes,
       series: [{{}}, ...seriesOpts],
-      sync: {{ key: sync.key }},
+      cursor: {{
+        sync: {{
+          key: syncKey,
+          scales: ["x"],
+        }},
+        drag: {{
+          x: true,
+          y: false,
+        }},
+      }},
       hooks: {{
         draw: [
           (u) => {{
@@ -251,7 +291,7 @@ fn render_document(doc: &PlotDocument) -> anyhow::Result<String> {
     const mount = () => {{
       opts.width = Math.max(wrap.clientWidth, 320);
       const u = new uPlot(opts, data, target);
-      sync.sub(u);
+      uPlot.sync(syncKey).sub(u);
       const ro = new ResizeObserver(() => {{
         u.setSize({{ width: Math.max(wrap.clientWidth, 320), height: panelHeight }});
       }});
