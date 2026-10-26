@@ -1,4 +1,4 @@
-use crate::simulate::{calculate_simulation_steps, plot};
+use crate::simulate::{calculate_simulation_steps, plot, uplot};
 use crate::{InterfaceType, SimulateArgs, SolverType};
 use anyhow::{Context, bail};
 use fmi_rs::model_description::fmi2::{Causality, ModelDescription};
@@ -119,33 +119,36 @@ pub fn simulate_fmu(
     }
 
     if args.show_plot {
-        let reference = if let Some(path) = &args.reference_file {
-            let reader = File::open(path)
-                .with_context(|| format!("Failed to read reference file '{path}'"))?;
-            let trajectories = read_csv(reader, model_description.clone())
-                .with_context(|| format!("Failed to parse reference file '{path}'"))?;
-            Some(trajectories)
-        } else {
-            None
-        };
 
-        let html = plot::fmi2::render_html(
-            &trajectories,
-            reference.as_ref(),
-            args.show_markers,
-            args.show_events,
-        )?;
+        uplot::render_html(&trajectories);
 
-        let temp_path = tempfile::Builder::new()
-            .prefix(&format!("{}_", model_description.modelName))
-            .suffix(".html")
-            .tempfile()?
-            .into_temp_path();
+        // let reference = if let Some(path) = &args.reference_file {
+        //     let reader = File::open(path)
+        //         .with_context(|| format!("Failed to read reference file '{path}'"))?;
+        //     let trajectories = read_csv(reader, model_description.clone())
+        //         .with_context(|| format!("Failed to parse reference file '{path}'"))?;
+        //     Some(trajectories)
+        // } else {
+        //     None
+        // };
 
-        let path = temp_path.to_path_buf();
-        let _ = temp_path.persist(&path);
+        // let html = plot::fmi2::render_html(
+        //     &trajectories,
+        //     reference.as_ref(),
+        //     args.show_markers,
+        //     args.show_events,
+        // )?;
 
-        plot::show_html(&path, &html)?;
+        // let temp_path = tempfile::Builder::new()
+        //     .prefix(&format!("{}_", model_description.modelName))
+        //     .suffix(".html")
+        //     .tempfile()?
+        //     .into_temp_path();
+
+        // let path = temp_path.to_path_buf();
+        // let _ = temp_path.persist(&path);
+
+        // plot::show_html(&path, &html)?;
     }
 
     result?;

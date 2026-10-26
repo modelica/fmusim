@@ -176,7 +176,7 @@ pub fn simulate_fmu(
             None
         };
 
-        uplot::render_html();
+        // uplot::render_html(&trajectories);
 
         // let html = plot::fmi3::render_html(
         //     &trajectories,
