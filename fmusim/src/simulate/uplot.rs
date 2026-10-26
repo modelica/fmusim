@@ -1,13 +1,11 @@
 use std::fs;
 use std::io;
-use fmi_rs::model_description::fmi2::VariableIndex;
 use fmi_rs::sim::fmi2::Trajectories;
 use serde::Serialize;
 
 #[derive(Serialize)]
 struct Signal {
     name: String,
-    unit: String,
     color: String,
     data: Vec<f64>,
 }
@@ -134,7 +132,7 @@ fn generate_html_report(results: &SimulationResults, output_path: &str) -> io::R
           isLast ? {{
             size: X_AXIS_SIZE,
             space: 40,
-            label: "Time (s)",
+            label: "time [s]",
             grid: {{ width: 1, stroke: "#eee" }},
             ticks: {{ show: false }}
           }} : {{
@@ -144,7 +142,7 @@ fn generate_html_report(results: &SimulationResults, output_path: &str) -> io::R
             values: () => []
           }},
           {{
-            label: `${{sig.name}} (${{sig.unit}})`,
+            label: `${{sig.name}}`,
             size: Y_AXIS_WIDTH,
             grid: {{ width: 1, stroke: "#eee" }},
             ticks: {{ show: false }}
@@ -195,14 +193,16 @@ pub fn render_html(trajectories: &Trajectories) {
     let mut signals = vec![];
 
     for (i, variable) in trajectories.variables().enumerate() {
-      if let Some(data) = trajectories.trajectory_by_index(i) {
-        let values: Vec<f64> = data.iter().map(|v| v.to_f64().unwrap_or_default()).collect();
-        
+      if let Some(values) = trajectories.trajectory_by_index(i) {
+        let data: Vec<f64> = values.iter().map(|v| v.to_f64().unwrap_or_default()).collect();
+        let mut name = variable.name.clone();
+        if let Some(unit) = trajectories.model_description.get_unit(variable) {
+          name = format!("{name} [{unit}]");
+        }
         let signal = Signal {
-          name: variable.name.clone(),
-          unit: "?".to_string(),
+          name,
           color: "#3b82f6".to_string(),
-          data: values,
+          data,
         };
 
         signals.push(signal);
