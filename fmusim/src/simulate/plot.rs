@@ -37,6 +37,8 @@ struct PlotDocument {
 #[derive(Serialize)]
 struct Panel {
     title: String,
+    /// Shared time axis for all series in this panel (null breaks the line).
+    x: Vec<Option<f64>>,
     series: Vec<Series>,
     y_min: Option<f64>,
     y_max: Option<f64>,
@@ -52,7 +54,6 @@ struct Series {
     stepped: bool,
     dashed: bool,
     fill: bool,
-    x: Vec<f64>,
     y: Vec<Option<f64>>,
 }
 
@@ -94,17 +95,17 @@ fn open_in_browser(path: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn aligned_series(time: &[f64], values: &[f64], ranges: &[Range<usize>]) -> (Vec<f64>, Vec<Option<f64>>) {
+fn aligned_series(time: &[f64], values: &[f64], ranges: &[Range<usize>]) -> (Vec<Option<f64>>, Vec<Option<f64>>) {
     let mut x = Vec::new();
     let mut y = Vec::new();
     for (i, range) in ranges.iter().enumerate() {
         if i > 0 {
-            x.push(f64::NAN);
+            x.push(None);
             y.push(None);
         }
         for idx in range.clone() {
             if let (Some(t), Some(v)) = (time.get(idx), values.get(idx)) {
-                x.push(*t);
+                x.push(Some(*t));
                 y.push(Some(*v));
             }
         }
@@ -149,8 +150,8 @@ fn render_document(doc: &PlotDocument) -> anyhow::Result<String> {
   const panelHeight = 220;
   const paths = uPlot.paths;
 
-  function yData(series) {{
-    return series.y.map(v => v === null ? null : v);
+  function nullsToUplot(arr) {{
+    return arr.map(v => (v === null ? null : v));
   }}
 
   doc.panels.forEach((panel, pi) => {{
@@ -160,27 +161,28 @@ fn render_document(doc: &PlotDocument) -> anyhow::Result<String> {
     wrap.appendChild(target);
     charts.appendChild(wrap);
 
-    const x = panel.series[0].x;
+    const x = nullsToUplot(panel.x);
     const data = [x];
     const seriesOpts = [];
-    panel.series.forEach((s, si) => {{
-      if (s.x.length !== x.length) {{
+    panel.series.forEach((s) => {{
+      if (s.y.length !== panel.x.length) {{
         console.warn("Skipping series with mismatched length:", s.label);
         return;
       }}
-      data.push(yData(s));
+      data.push(nullsToUplot(s.y));
       const stroke = s.color;
-      let path = paths.spline;
-      if (s.stepped) path = paths.stepped;
-      seriesOpts.push({{
+      const seriesOpt = {{
         label: s.label,
         stroke,
         width: s.width,
         dash: s.dashed ? [6, 4] : null,
-        paths: path,
         points: {{ show: doc.show_markers, size: 5 }},
         fill: s.fill ? "rgba(240,248,255,0.5)" : null,
-      }});
+      }};
+      if (s.stepped && paths.stepped) {{
+        seriesOpt.paths = paths.stepped;
+      }}
+      seriesOpts.push(seriesOpt);
     }});
 
     const scales = {{
@@ -195,10 +197,6 @@ fn render_document(doc: &PlotDocument) -> anyhow::Result<String> {
           : {{}}),
       }},
     }};
-
-    if (panel.y_values && panel.y_labels) {{
-      scales.y.values = (u, vals) => panel.y_values;
-    }}
 
     const axes = [
       {{
@@ -250,13 +248,16 @@ fn render_document(doc: &PlotDocument) -> anyhow::Result<String> {
       }},
     }};
 
-    const u = new uPlot(opts, data, target);
-    sync.sub(u);
-
-    const ro = new ResizeObserver(() => {{
-      u.setSize({{ width: wrap.clientWidth, height: panelHeight }});
-    }});
-    ro.observe(wrap);
+    const mount = () => {{
+      opts.width = Math.max(wrap.clientWidth, 320);
+      const u = new uPlot(opts, data, target);
+      sync.sub(u);
+      const ro = new ResizeObserver(() => {{
+        u.setSize({{ width: Math.max(wrap.clientWidth, 320), height: panelHeight }});
+      }});
+      ro.observe(wrap);
+    }};
+    requestAnimationFrame(mount);
   }});
 }})();
   </script>
@@ -328,12 +329,12 @@ pub mod fmi2 {
                 stepped,
                 dashed: false,
                 fill,
-                x,
                 y,
             }];
 
             panels.push(Panel {
                 title: axis_title,
+                x,
                 series,
                 y_min,
                 y_max,
@@ -442,6 +443,7 @@ pub mod fmi3 {
                 };
 
                 let mut color_iter = COLORS.iter().cycle();
+                let mut panel_x: Option<Vec<Option<f64>>> = None;
                 let mut series_list = Vec::new();
 
                 for j in 0..size {
@@ -459,6 +461,22 @@ pub mod fmi3 {
 
                     let current_color = color_iter.next().unwrap_or(&COLORS[0]);
 
+                    let (x, y) = aligned_series(&time, &scalar_values, &ranges);
+                    if panel_x.is_none() {
+                        panel_x = Some(x);
+                    }
+                    let fill = matches!(variable.variableType, VariableType::Boolean { .. });
+
+                    series_list.push(Series {
+                        label: label.clone(),
+                        color: (*current_color).to_string(),
+                        width: 1.5,
+                        stepped: false,
+                        dashed: false,
+                        fill,
+                        y,
+                    });
+
                     if let Some(ref_trajectories) = ref_trajectories {
                         let scalar_ref_values: Option<Vec<f64>> = ref_trajectories
                             .rows
@@ -471,17 +489,16 @@ pub mod fmi3 {
                             .collect();
 
                         if let Some(scalar_ref_values) = scalar_ref_values {
-                            // uPlot uses one shared x series per chart; align reference to simulation time.
-                            let ref_xy = if ref_trajectories.time == time {
+                            let ref_y = if ref_trajectories.time == time {
                                 let ref_ranges =
                                     split_time_intervals_ranges(&ref_trajectories.time);
-                                Some(aligned_series(&time, &scalar_ref_values, &ref_ranges))
+                                aligned_series(&time, &scalar_ref_values, &ref_ranges).1
                             } else if ref_trajectories.time.len() == scalar_ref_values.len() {
-                                Some(aligned_series(&time, &scalar_ref_values, &ranges))
+                                aligned_series(&time, &scalar_ref_values, &ranges).1
                             } else {
-                                None
+                                continue;
                             };
-                            if let Some((rx, ry)) = ref_xy {
+                            if ref_y.len() == panel_x.as_ref().map(Vec::len).unwrap_or(0) {
                                 series_list.push(Series {
                                     label: format!("{label} (reference)"),
                                     color: format!("{current_color}66"),
@@ -489,31 +506,19 @@ pub mod fmi3 {
                                     stepped: false,
                                     dashed: true,
                                     fill: false,
-                                    x: rx,
-                                    y: ry,
+                                    y: ref_y,
                                 });
                             }
                         }
                     }
-
-                    let (x, y) = aligned_series(&time, &scalar_values, &ranges);
-                    let fill = matches!(variable.variableType, VariableType::Boolean { .. });
-
-                    series_list.push(Series {
-                        label: label.clone(),
-                        color: (*current_color).to_string(),
-                        width: 1.5,
-                        stepped: false,
-                        dashed: false,
-                        fill,
-                        x,
-                        y,
-                    });
                 }
 
-                if !series_list.is_empty() {
+                if let Some(x) = panel_x
+                    && !series_list.is_empty()
+                {
                     panels.push(Panel {
                         title: axis_title,
+                        x,
                         series: series_list,
                         y_min,
                         y_max,
