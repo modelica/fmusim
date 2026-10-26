@@ -231,13 +231,14 @@ fn render_document(doc: &PlotDocument) -> anyhow::Result<String> {
         size: isBottom ? 36 : 0,
         show: true,
         grid: {{ show: true, stroke: "#d3d3d380", width: 1 }},
-        ticks: {{ show: isBottom }},
+        ticks: {{ show: false }},
         values: isBottom ? undefined : () => [],
         label: isBottom ? "time [s]" : "",
       }},
       {{
         stroke: "#000",
         grid: {{ show: true, stroke: "#d3d3d380", width: 1 }},
+        ticks: {{ show: false }},
         label: panel.title,
         size: 70,
         ...(panel.y_values && panel.y_labels
@@ -263,7 +264,7 @@ fn render_document(doc: &PlotDocument) -> anyhow::Result<String> {
         }},
         drag: {{
           x: true,
-          y: false,
+          y: true,
         }},
       }},
       hooks: {{
