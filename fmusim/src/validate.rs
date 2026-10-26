@@ -78,9 +78,13 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
 
     eprintln!("    {green}Validating ZIP archive{green:#}");
 
-    let problems = validate_zip_archive(fmu_file);
+    let mut problems_found = false;
 
-    for problem in problems {
+    let zip_problems = validate_zip_archive(fmu_file);
+    
+    problems_found |= !zip_problems.is_empty();
+
+    for problem in zip_problems {
         eprintln!("{red}error{red:#}: {problem}");
     }
 
@@ -90,12 +94,14 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
 
     let document = fs::read(&xml_path)?;
 
-    let problems = match fmi_major_version {
+    let schema_problems = match fmi_major_version {
         FMIMajorVersion::V2 => validate_fmi2_model_description(&document),
         FMIMajorVersion::V3 => validate_fmi3_model_description(&document),
     };
 
-    for problem in problems {
+    problems_found |= !schema_problems.is_empty();
+    
+    for problem in schema_problems {
         eprintln!("{red}error{red:#}: {problem}");
     }
 
@@ -111,7 +117,7 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
 
     let root = doc.root_element();
 
-    let problems = match &fmi_major_version {
+    let semantic_problems = match &fmi_major_version {
         FMIMajorVersion::V2 => fmi_rs::model_description::fmi2::ModelDescription::from_node(&root)
             .context("Failed to parse model description")?
             .validate(),
@@ -120,7 +126,9 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
             .validate(),
     };
 
-    for problem in &problems {
+    problems_found |= !semantic_problems.is_empty();
+    
+    for problem in &semantic_problems {
         render_xml_error(&text, problem);
     }
 
@@ -132,13 +140,14 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
         let document =
             fs::read(&build_description_path).context("Failed to read build description")?;
 
-        let mut problems = validate_build_description(&document);
+        let mut build_problems = validate_build_description(&document);
 
         if let Err(e) = BuildDescription::from_file(build_description_path) {
-            problems.push(e.to_string());
+            build_problems.push(e.to_string());
         }
 
-        for problem in problems {
+        problems_found |= !build_problems.is_empty();
+        for problem in build_problems {
             eprintln!("{red}error{red:#}: {problem}");
         }
     }
@@ -153,20 +162,21 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
         let document =
             fs::read(&dae_manifest_path).context("Failed to read fmi-ls-dae manifest")?;
 
-        let mut problems = validate_dae_manifest(&document);
+        let mut dae_problems = validate_dae_manifest(&document);
 
         if let Err(e) = DaeManifest::from_file(dae_manifest_path) {
-            problems.push(e.to_string());
+            dae_problems.push(e.to_string());
         }
 
-        for problem in problems {
+        problems_found |= !dae_problems.is_empty();
+        for problem in dae_problems {
             eprintln!("{red}error{red:#}: {problem}");
         }
     }
 
-    if problems.is_empty() {
-        Ok(())
-    } else {
+    if problems_found {
         Err(anyhow::anyhow!("Validation failed"))
+    } else {
+        Ok(())
     }
 }
