@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>uPlot Equal Y-Axis Heights Example</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.25/dist/uPlot.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/uplot@1.6.25/dist/uPlot.iife.min.js"></script>
+  <style>
+    html {
+      height: 100%;
+    }
+    body {
+      min-height: 100%;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f4f4f9;
+    }
+    .chart-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 8px;
+      width: 100%;
+      min-height: 480px;
+      height: calc(100vh - 80px);
+      box-sizing: border-box;
+    }
+    .chart-wrapper {
+      display: flex;
+      flex-direction: column;
+    }
+    .chart-wrapper > div {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="chart-container" id="container">
+    <div class="chart-wrapper" id="wrapper-top">
+      <div id="chart-top"></div>
+    </div>
+    <div class="chart-wrapper" id="wrapper-bottom">
+      <div id="chart-bottom"></div>
+    </div>
+  </div>
+
+  <script>
+    const xValues = Array.from({ length: 10 }, (_, i) => i + 1);
+    const seriesDataTop = [12, 19, 3, 5, 2, 8, 15, 9, 14, 11];
+    const seriesDataBottom = [1045, 1042, 1058, 1062, 1055, 1070, 1068, 1080, 1075, 1088];
+
+    const sync = uPlot.sync("stacked-plots");
+    const Y_AXIS_WIDTH = 60;
+    const X_AXIS_SIZE = 35; // Exact height reserved for bottom axis (ticks + labels + title)
+    const PADDING_V = 20;   // Top padding (10) + bottom padding (10)
+
+    const container = document.getElementById("container");
+    const wrapperTop = document.getElementById("wrapper-top");
+    const wrapperBottom = document.getElementById("wrapper-bottom");
+
+    function getDimensions() {
+      const width = container.clientWidth - 32;
+      const totalInnerHeight = container.clientHeight - 32 - 12; // minus container padding and flex gap
+      
+      // Calculate target inner plotting height (h) so both inner plotting areas match:
+      // totalInnerHeight = heightTop + heightBottom
+      // heightTop = h + PADDING_V
+      // heightBottom = h + PADDING_V + X_AXIS_SIZE
+      const h = Math.max(120, (totalInnerHeight - (2 * PADDING_V) - X_AXIS_SIZE) / 2);
+      
+      const heightTop = Math.floor(h + PADDING_V);
+      const heightBottom = Math.floor(h + PADDING_V + X_AXIS_SIZE);
+      
+      return { width, heightTop, heightBottom };
+    }
+
+    const dims = getDimensions();
+
+    // Apply initial proportional flex heights to wrappers
+    wrapperTop.style.flex = `${dims.heightTop}`;
+    wrapperBottom.style.flex = `${dims.heightBottom}`;
+
+    const baseOpts = {
+      width: dims.width,
+      padding: [10, 20, 10, 15], 
+      scales: {
+        x: { time: false }
+      },
+      legend: { show: false },
+      cursor: {
+        sync: { key: sync.key }
+      }
+    };
+
+    const optsTop = {
+      ...baseOpts,
+      height: dims.heightTop,
+      axes: [
+        { 
+          size: 0,             
+          grid: { show: true, width: 1, stroke: "#eee" },
+          ticks: { show: false },
+          values: () => []     
+        }, 
+        { 
+          label: "Temp", 
+          size: Y_AXIS_WIDTH,
+          grid: { width: 1, stroke: "#eee" },
+          ticks: { show: false }
+        }
+      ],
+      series: [{}, { label: "Temp", stroke: "#3b82f6", width: 2 }]
+    };
+
+    const optsBottom = {
+      ...baseOpts,
+      height: dims.heightBottom,
+      axes: [
+        { 
+          size: X_AXIS_SIZE, // Locks exact pixel height for bottom axis space
+          space: 40,
+          label: "Index",
+          grid: { width: 1, stroke: "#eee" },
+          ticks: { show: false }
+        }, 
+        { 
+          label: "Pressure", 
+          size: Y_AXIS_WIDTH,
+          grid: { width: 1, stroke: "#eee" },
+          ticks: { show: false }
+        }
+      ],
+      series: [{}, { label: "Pressure", stroke: "#10b981", width: 2 }]
+    };
+
+    const uTop = new uPlot(optsTop, [xValues, seriesDataTop], document.getElementById("chart-top"));
+    const uBottom = new uPlot(optsBottom, [xValues, seriesDataBottom], document.getElementById("chart-bottom"));
+
+    const resizeObserver = new ResizeObserver(() => {
+      const newDims = getDimensions();
+      if (newDims.width > 0) {
+        wrapperTop.style.flex = `${newDims.heightTop}`;
+        wrapperBottom.style.flex = `${newDims.heightBottom}`;
+        
+        uTop.setSize({ width: newDims.width, height: newDims.heightTop });
+        uBottom.setSize({ width: newDims.width, height: newDims.heightBottom });
+      }
+    });
+
+    resizeObserver.observe(container);
+  </script>
+
+</body>
+</html>
