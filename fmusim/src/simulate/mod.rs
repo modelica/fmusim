@@ -8,6 +8,7 @@ use itertools::Itertools;
 pub mod fmi2;
 pub mod fmi3;
 pub mod plot;
+pub mod uplot;
 
 // calculates the simulation steps based on the provided arguments and the default experiment settings
 pub fn calculate_simulation_steps(

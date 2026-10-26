@@ -17,8 +17,7 @@ use fmi_rs::{
 use fmi_rs::{sim::fmi3::SimulationSettings, sundials::solver::cvode::CVodeSolverFactory};
 
 use crate::{
-    InterfaceType, SimulateArgs, SolverType,
-    simulate::{calculate_simulation_steps, plot},
+    InterfaceType, SimulateArgs, SolverType, simulate::{calculate_simulation_steps, plot, uplot},
 };
 
 pub fn simulate_fmu(
@@ -177,24 +176,26 @@ pub fn simulate_fmu(
             None
         };
 
-        let html = plot::fmi3::render_html(
-            &trajectories,
-            ref_trajectories.as_ref(),
-            args.show_markers,
-            args.show_events,
-            args.log_time_scale,
-        )?;
+        uplot::render_html();
 
-        let temp_path = tempfile::Builder::new()
-            .prefix(&format!("{}_", model_description.modelName))
-            .suffix(".html")
-            .tempfile()?
-            .into_temp_path();
+        // let html = plot::fmi3::render_html(
+        //     &trajectories,
+        //     ref_trajectories.as_ref(),
+        //     args.show_markers,
+        //     args.show_events,
+        //     args.log_time_scale,
+        // )?;
 
-        let path = temp_path.to_path_buf();
-        let _ = temp_path.persist(&path);
+        // let temp_path = tempfile::Builder::new()
+        //     .prefix(&format!("{}_", model_description.modelName))
+        //     .suffix(".html")
+        //     .tempfile()?
+        //     .into_temp_path();
 
-        plot::show_html(&path, &html)?;
+        // let path = temp_path.to_path_buf();
+        // let _ = temp_path.persist(&path);
+
+        // plot::show_html(&path, &html)?;
     }
 
     result?;
