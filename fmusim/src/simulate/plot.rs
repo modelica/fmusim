@@ -252,6 +252,7 @@ fn render_document(doc: &PlotDocument) -> anyhow::Result<String> {
       width: wrap.clientWidth || 900,
       height: panelHeight,
       title: "",
+      legend: {{ show: false }},
       scales,
       axes,
       series: [{{}}, ...seriesOpts],
