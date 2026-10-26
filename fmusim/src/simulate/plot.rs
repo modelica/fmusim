@@ -57,7 +57,8 @@ struct Series {
 }
 
 pub fn show_html(path: &Path, html: &str) -> anyhow::Result<()> {
-    std::fs::write(path, html).with_context(|| format!("Failed to write plot file '{}'", path))?;
+    std::fs::write(path, html)
+        .with_context(|| format!("Failed to write plot file '{}'", path.display()))?;
     open_in_browser(path)
 }
 
@@ -295,7 +296,7 @@ pub mod fmi2 {
 
             let (y_min, y_max, y_values, y_labels) =
                 y_axis_hints_fmi2(trajectories, variable);
-            if matches!(variable.variableType, VariableType::Enumeration { declaredType, .. })
+            if let VariableType::Enumeration { declaredType, .. } = &variable.variableType
                 && trajectories
                     .model_description
                     .get_type_definition(declaredType)
@@ -413,7 +414,7 @@ pub mod fmi3 {
 
             let (y_min, y_max, y_values, y_labels) =
                 y_axis_hints_fmi3(trajectories, variable);
-            if matches!(variable.variableType, VariableType::Enumeration { declaredType, .. })
+            if let VariableType::Enumeration { declaredType, .. } = &variable.variableType
                 && trajectories
                     .model_description
                     .get_type_definition(declaredType)
