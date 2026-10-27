@@ -4,6 +4,8 @@ use std::io;
 use askama::Template;
 use serde::Serialize;
 
+pub mod fmi3;
+
 /// One trace in a subplot (shared x / y scale with siblings in the same plot).
 #[derive(Serialize)]
 pub struct TimeSeries {

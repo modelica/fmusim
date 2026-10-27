@@ -17,7 +17,8 @@ use fmi_rs::{
 use fmi_rs::{sim::fmi3::SimulationSettings, sundials::solver::cvode::CVodeSolverFactory};
 
 use crate::{
-    InterfaceType, SimulateArgs, SolverType, simulate::{calculate_simulation_steps, plot, uplot},
+    InterfaceType, SimulateArgs, SolverType,
+    simulate::{calculate_simulation_steps, uplot},
 };
 
 pub fn simulate_fmu(
@@ -176,26 +177,9 @@ pub fn simulate_fmu(
             None
         };
 
-        // uplot::render_html(&trajectories);
-
-        // let html = plot::fmi3::render_html(
-        //     &trajectories,
-        //     ref_trajectories.as_ref(),
-        //     args.show_markers,
-        //     args.show_events,
-        //     args.log_time_scale,
-        // )?;
-
-        // let temp_path = tempfile::Builder::new()
-        //     .prefix(&format!("{}_", model_description.modelName))
-        //     .suffix(".html")
-        //     .tempfile()?
-        //     .into_temp_path();
-
-        // let path = temp_path.to_path_buf();
-        // let _ = temp_path.persist(&path);
-
-        // plot::show_html(&path, &html)?;
+        let results =
+            uplot::fmi3::simulation_results(&trajectories, ref_trajectories.as_ref());
+        uplot::render_html(results);
     }
 
     result?;
