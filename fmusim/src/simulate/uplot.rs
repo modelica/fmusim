@@ -12,6 +12,8 @@ struct Signal {
     fill: Option<String>,
     discrete: bool,
     data: Vec<f64>,
+    y_ticks: Option<Vec<(f64, String)>>,
+    range: Option<(f64, f64)>,
 }
 
 #[derive(Serialize)]
@@ -125,6 +127,16 @@ fn generate_html_report(results: &SimulationResults, output_path: &str) -> io::R
       const isLast = i === numPlots - 1;
       wrappers[i].style.flex = `${{currentHeights[i]}}`;
 
+      let valueMap = {{}};
+      let splitValues = [];
+
+      if (sig.y_ticks) {{
+        sig.y_ticks.forEach(([value, label]) => {{
+          valueMap[value] = label;
+          splitValues.push(value);
+        }});
+      }}
+
       const seriesConfig = {{
         label: sig.name,
         stroke: sig.color,
@@ -134,14 +146,42 @@ fn generate_html_report(results: &SimulationResults, output_path: &str) -> io::R
 
       const scales = {{ x: {{ time: false }} }};
       
-      if (sig.discrete) {{
-        scales.y = {{ range: () => [-0.1, 1.1] }};
+      if (sig.range) {{
+        scales.y = {{ range: () => sig.range }};
       }}
 
       // Apply step interpolation if flagged as discrete/stepped
       if (sig.discrete) {{
         seriesConfig.paths = uPlot.paths.stepped({{ align: 1 }});
       }}
+
+      const yAxis = {{
+        label: `${{sig.name}}`,
+        size: Y_AXIS_WIDTH,
+        grid: {{ width: 1, stroke: "#eee" }},
+        ticks: {{ show: false }}
+      }};
+
+      if (splitValues.length > 0) {{
+        yAxis.splits = () => splitValues;
+        yAxis.values = (u, splits) => splits.map(v => valueMap[v] ?? v);
+      }}
+
+      const axes = [
+        isLast ? {{
+          size: X_AXIS_SIZE,
+          space: 40,
+          label: "time [s]",
+          grid: {{ width: 1, stroke: "#eee" }},
+          ticks: {{ show: false }}
+        }} : {{
+          size: 0,
+          grid: {{ show: true, width: 1, stroke: "#eee" }},
+          ticks: {{ show: false }},
+          values: () => []
+        }},
+        yAxis
+      ];
 
       const opts = {{
         width: currentWidth,
@@ -150,28 +190,7 @@ fn generate_html_report(results: &SimulationResults, output_path: &str) -> io::R
         scales: scales,
         legend: {{ show: false }},
         cursor: {{ sync: {{ key: sync.key }} }},
-        axes: [
-          isLast ? {{
-            size: X_AXIS_SIZE,
-            space: 40,
-            label: "time [s]",
-            grid: {{ width: 1, stroke: "#eee" }},
-            ticks: {{ show: false }}
-          }} : {{
-            size: 0,
-            grid: {{ show: true, width: 1, stroke: "#eee" }},
-            ticks: {{ show: false }},
-            values: () => []
-          }},
-          {{
-            label: `${{sig.name}}`,
-            size: Y_AXIS_WIDTH,
-            grid: {{ width: 1, stroke: "#eee" }},
-            ticks: {{ show: false }},
-            splits: (self, scaleMin, scaleMax, foundIncr, foundSpace) => [0, 1],
-            values: (u, splits) => splits.map(v => v === 1 ? "HIGH" : v === 0 ? "LOW" : "")
-          }}
-        ],
+        axes: axes,
         series: [{{}}, seriesConfig]
       }};
 
@@ -216,10 +235,14 @@ pub fn render_html(trajectories: &Trajectories) {
         if let Some(unit) = trajectories.model_description.get_unit(variable) {
           name = format!("{name} [{unit}]");
         }
-        let fill = if matches!(variable.variableType, VariableType::Boolean { .. }) {
-          Some("rgba(0, 0, 255, 0.1)".to_string())
+        let (fill, y_ticks, range) = if matches!(variable.variableType, VariableType::Boolean { .. }) {
+          let y_ticks = Some(vec![
+            (0.0, "false".to_string()), 
+            (1.0, "true".to_string()),
+          ]);
+          (Some("rgba(0, 0, 255, 0.1)".to_string()), y_ticks, Some((-0.1, 1.1)))
         } else {
-          None
+          (None, None, None)
         };
 
         let discrete = variable.variability !=  Variability::Continuous;
@@ -230,6 +253,8 @@ pub fn render_html(trajectories: &Trajectories) {
           fill,
           discrete,
           data,
+          y_ticks,
+          range,
         };
 
         signals.push(signal);
