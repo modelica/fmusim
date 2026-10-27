@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>Dynamic Multi-Signal Simulation Report</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.25/dist/uPlot.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/uplot@1.6.25/dist/uPlot.iife.min.js"></script>
+  <style>
+{% include "vendor/uPlot.min.css" %}
+  </style>
   <style>
     html, body {
       height: 100%;
@@ -41,6 +42,9 @@
 
   <div class="chart-container" id="container"></div>
 
+  <script>
+{% include "vendor/uPlot.iife.min.js" %}
+  </script>
   <script type="application/json" id="plot-data">{{ plot_data_json|safe }}</script>
   <script>
 {% include "multi_signal_report.js" %}
