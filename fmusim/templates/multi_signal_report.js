@@ -22,6 +22,16 @@
     "#999999",
   ];
 
+  const REFERENCE_ALPHA = 0.45;
+
+  function seriesColor(hex, alpha) {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
   const wrappers = [];
   const chartDivs = [];
   const uplots = [];
@@ -75,15 +85,25 @@
       });
     }
 
-    const seriesOpts = plot.series.map((s, j) => {
+    let seriesColorIndex = 0;
+    const seriesOpts = plot.series.map((s) => {
+      const colorIdx = s.dashed
+        ? Math.max(0, seriesColorIndex - 1)
+        : seriesColorIndex;
+      const baseColor = SERIES_COLORS[colorIdx % SERIES_COLORS.length];
+      if (!s.dashed) {
+        seriesColorIndex += 1;
+      }
       const seriesConfig = {
         label: s.name,
-        stroke: SERIES_COLORS[j % SERIES_COLORS.length],
-        fill: s.fill,
-        width: s.dashed ? 3 : 2,
-        dash: s.dashed ? [6, 4] : null,
+        stroke: s.dashed
+          ? seriesColor(baseColor, REFERENCE_ALPHA)
+          : baseColor,
+        fill: s.dashed ? null : s.fill,
+        width: s.dashed ? 5 : 2,
+        dash: null,
       };
-      if (s.discrete) {
+      if (s.discrete && !s.dashed) {
         seriesConfig.paths = uPlot.paths.stepped({ align: 1 });
       }
       return seriesConfig;
