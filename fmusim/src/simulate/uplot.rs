@@ -27,18 +27,14 @@ struct SimulationResults {
 #[derive(Template)]
 #[template(path = "multi_signal_report.html.askama")]
 struct MultiSignalReportTemplate {
-    time_json: String,
-    signals_json: String,
+    plot_data_json: String,
 }
 
 fn generate_html_report(results: &SimulationResults, output_path: &str) -> io::Result<()> {
-    let time_json = serde_json::to_string(&results.time).unwrap();
-    let signals_json = serde_json::to_string(&results.signals).unwrap();
+    let plot_data_json =
+        serde_json::to_string(results).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
-    let html_content = MultiSignalReportTemplate {
-        time_json,
-        signals_json,
-    }
+    let html_content = MultiSignalReportTemplate { plot_data_json }
     .render()
     .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
