@@ -122,7 +122,7 @@
       axes: axes,
       series: [{}, seriesConfig],
       hooks: {
-        draw: [
+        drawClear: [
           (u) => {
             if (!eventTimes.length) return;
             const { ctx } = u;
