@@ -1,8 +1,8 @@
 (function () {
-  const { time: timeValues, signals, events: eventTimes = [] } = JSON.parse(
+  const { time: timeValues, plots, events: eventTimes = [] } = JSON.parse(
     document.getElementById("plot-data").textContent
   );
-  const numPlots = signals.length;
+  const numPlots = plots.length;
 
   const container = document.getElementById("container");
   const sync = uPlot.sync("multi-signal-plots");
@@ -24,9 +24,9 @@
 
   const wrappers = [];
   const chartDivs = [];
-  const plots = [];
+  const uplots = [];
 
-  signals.forEach((sig, i) => {
+  plots.forEach((_, i) => {
     const wrapper = document.createElement("div");
     wrapper.className = "chart-wrapper";
 
@@ -44,7 +44,7 @@
     const totalInnerHeight = container.clientHeight - 32 - ((numPlots - 1) * GAP_SIZE);
     const h = Math.max(80, (totalInnerHeight - (numPlots * PADDING_V) - X_AXIS_SIZE) / numPlots);
 
-    return signals.map((_, i) => {
+    return plots.map((_, i) => {
       let plotHeight = h + PADDING_V;
       if (i === numPlots - 1) {
         plotHeight += X_AXIS_SIZE;
@@ -61,39 +61,42 @@
   let currentWidth = getWidth();
   let currentHeights = getHeights();
 
-  signals.forEach((sig, i) => {
+  plots.forEach((plot, i) => {
     const isLast = i === numPlots - 1;
     wrappers[i].style.flex = `${currentHeights[i]}`;
 
     let valueMap = {};
     let splitValues = [];
 
-    if (sig.y_ticks) {
-      sig.y_ticks.forEach(([value, label]) => {
+    if (plot.y_ticks) {
+      plot.y_ticks.forEach(([value, label]) => {
         valueMap[value] = label;
         splitValues.push(value);
       });
     }
 
-    const seriesConfig = {
-      label: sig.name,
-      stroke: SERIES_COLORS[0],
-      fill: sig.fill,
-      width: 2,
-    };
+    const seriesOpts = plot.series.map((s, j) => {
+      const seriesConfig = {
+        label: s.name,
+        stroke: SERIES_COLORS[j % SERIES_COLORS.length],
+        fill: s.fill,
+        width: s.dashed ? 3 : 2,
+        dash: s.dashed ? [6, 4] : null,
+      };
+      if (s.discrete) {
+        seriesConfig.paths = uPlot.paths.stepped({ align: 1 });
+      }
+      return seriesConfig;
+    });
 
     const scales = { x: { time: false } };
 
-    if (sig.range) {
-      scales.y = { range: () => sig.range };
-    }
-
-    if (sig.discrete) {
-      seriesConfig.paths = uPlot.paths.stepped({ align: 1 });
+    if (plot.range) {
+      scales.y = { range: () => plot.range };
     }
 
     const yAxis = {
-      label: `${sig.name}`,
+      label: `${plot.title}`,
       size: Y_AXIS_WIDTH,
       grid: { width: 1, stroke: "#eee" },
       ticks: { show: false },
@@ -122,6 +125,8 @@
       yAxis,
     ];
 
+    const data = [timeValues, ...plot.series.map((s) => s.data)];
+
     const opts = {
       width: currentWidth,
       height: currentHeights[i],
@@ -130,7 +135,7 @@
       legend: { show: false },
       cursor: { sync: { key: sync.key } },
       axes: axes,
-      series: [{}, seriesConfig],
+      series: [{}, ...seriesOpts],
       hooks: {
         drawClear: [
           (u) => {
@@ -138,7 +143,7 @@
             const { ctx } = u;
             ctx.save();
             ctx.strokeStyle = "rgba(255, 215, 0, 0.9)";
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1;
             for (const t of eventTimes) {
               const x = u.valToPos(t, "x", true);
               if (x >= u.bbox.left && x <= u.bbox.left + u.bbox.width) {
@@ -154,8 +159,8 @@
       },
     };
 
-    const u = new uPlot(opts, [timeValues, sig.data], chartDivs[i]);
-    plots.push(u);
+    const u = new uPlot(opts, data, chartDivs[i]);
+    uplots.push(u);
   });
 
   const resizeObserver = new ResizeObserver(() => {
@@ -163,9 +168,9 @@
     const newHeights = getHeights();
 
     if (newWidth > 0) {
-      signals.forEach((_, i) => {
+      plots.forEach((_, i) => {
         wrappers[i].style.flex = `${newHeights[i]}`;
-        plots[i].setSize({ width: newWidth, height: newHeights[i] });
+        uplots[i].setSize({ width: newWidth, height: newHeights[i] });
       });
     }
   });

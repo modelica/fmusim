@@ -1,4 +1,4 @@
-use crate::simulate::uplot::{Signal, SimulationResults};
+use crate::simulate::uplot::{Plot, SimulationResults, TimeSeries};
 use crate::simulate::{calculate_simulation_steps, plot, uplot};
 use crate::{InterfaceType, SimulateArgs, SolverType};
 use anyhow::{Context, bail};
@@ -121,43 +121,45 @@ pub fn simulate_fmu(
 
     if args.show_plot {
 
-        let mut signals = vec![];
+        let mut plots = vec![];
 
         for (i, variable) in trajectories.variables().enumerate() {
             if let Some(values) = trajectories.trajectory_by_index(i) {
                 let data: Vec<f64> = values.iter().map(|v| v.to_f64().unwrap_or_default()).collect();
-                let mut name = variable.name.clone();
+                let mut title = variable.name.clone();
                 if let Some(unit) = trajectories.model_description.get_unit(variable) {
-                name = format!("{name} [{unit}]");
+                    title = format!("{title} [{unit}]");
                 }
                 let (fill, y_ticks, range) = if matches!(variable.variableType, VariableType::Boolean { .. }) {
-                let y_ticks = Some(vec![
-                    (0.0, "false".to_string()), 
-                    (1.0, "true".to_string()),
-                ]);
-                (Some("rgba(0, 0, 255, 0.1)".to_string()), y_ticks, Some((-0.1, 1.1)))
+                    let y_ticks = Some(vec![
+                        (0.0, "false".to_string()),
+                        (1.0, "true".to_string()),
+                    ]);
+                    (Some("rgba(0, 0, 255, 0.1)".to_string()), y_ticks, Some((-0.1, 1.1)))
                 } else {
-                (None, None, None)
+                    (None, None, None)
                 };
 
-                let discrete = variable.variability !=  Variability::Continuous;
+                let discrete = variable.variability != Variability::Continuous;
 
-                let signal = Signal {
-                    name,
-                    fill,
-                    discrete,
-                    data,
+                plots.push(Plot {
+                    title,
                     y_ticks,
                     range,
-                };
-
-                signals.push(signal);
+                    series: vec![TimeSeries {
+                        name: variable.name.clone(),
+                        fill,
+                        discrete,
+                        dashed: false,
+                        data,
+                    }],
+                });
             }
         }
 
         let results = SimulationResults {
             time: trajectories.time.clone(),
-            signals,
+            plots,
             events: trajectories.events(),
         };
 
