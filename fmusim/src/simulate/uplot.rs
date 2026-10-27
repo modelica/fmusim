@@ -1,5 +1,7 @@
 use std::fs;
 use std::io;
+use fmi_rs::model_description::fmi2::Variability;
+use fmi_rs::model_description::fmi2::VariableType;
 use fmi_rs::sim::fmi2::Trajectories;
 use serde::Serialize;
 
@@ -7,6 +9,8 @@ use serde::Serialize;
 struct Signal {
     name: String,
     color: String,
+    fill: Option<String>,
+    discrete: bool,
     data: Vec<f64>,
 }
 
@@ -121,11 +125,29 @@ fn generate_html_report(results: &SimulationResults, output_path: &str) -> io::R
       const isLast = i === numPlots - 1;
       wrappers[i].style.flex = `${{currentHeights[i]}}`;
 
+      const seriesConfig = {{
+        label: sig.name,
+        stroke: sig.color,
+        fill: sig.fill,
+        width: 2    
+      }};
+
+      const scales = {{ x: {{ time: false }} }};
+      
+      if (sig.discrete) {{
+        scales.y = {{ range: () => [-0.1, 1.1] }};
+      }}
+
+      // Apply step interpolation if flagged as discrete/stepped
+      if (sig.discrete) {{
+        seriesConfig.paths = uPlot.paths.stepped({{ align: 1 }});
+      }}
+
       const opts = {{
         width: currentWidth,
         height: currentHeights[i],
         padding: [10, 20, 10, 15],
-        scales: {{ x: {{ time: false }} }},
+        scales: scales,
         legend: {{ show: false }},
         cursor: {{ sync: {{ key: sync.key }} }},
         axes: [
@@ -145,17 +167,12 @@ fn generate_html_report(results: &SimulationResults, output_path: &str) -> io::R
             label: `${{sig.name}}`,
             size: Y_AXIS_WIDTH,
             grid: {{ width: 1, stroke: "#eee" }},
-            ticks: {{ show: false }}
+            ticks: {{ show: false }},
+            splits: (self, scaleMin, scaleMax, foundIncr, foundSpace) => [0, 1],
+            values: (u, splits) => splits.map(v => v === 1 ? "HIGH" : v === 0 ? "LOW" : "")
           }}
         ],
-        series: [
-          {{}},
-          {{
-            label: sig.name,
-            stroke: sig.color,
-            width: 2
-          }}
-        ]
+        series: [{{}}, seriesConfig]
       }};
 
       const u = new uPlot(opts, [timeValues, sig.data], chartDivs[i]);
@@ -199,9 +216,19 @@ pub fn render_html(trajectories: &Trajectories) {
         if let Some(unit) = trajectories.model_description.get_unit(variable) {
           name = format!("{name} [{unit}]");
         }
+        let fill = if matches!(variable.variableType, VariableType::Boolean { .. }) {
+          Some("rgba(0, 0, 255, 0.1)".to_string())
+        } else {
+          None
+        };
+
+        let discrete = variable.variability !=  Variability::Continuous;
+
         let signal = Signal {
           name,
           color: "#3b82f6".to_string(),
+          fill,
+          discrete,
           data,
         };
 
