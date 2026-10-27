@@ -4,7 +4,9 @@ use std::io;
 use askama::Template;
 use serde::Serialize;
 
+pub mod fmi2;
 pub mod fmi3;
+pub(crate) mod reference;
 
 /// One trace in a subplot (shared x / y scale with siblings in the same plot).
 #[derive(Serialize)]
