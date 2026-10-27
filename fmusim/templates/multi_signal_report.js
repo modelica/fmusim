@@ -1,5 +1,5 @@
 (function () {
-  const { time: timeValues, signals } = JSON.parse(
+  const { time: timeValues, signals, events: eventTimes = [] } = JSON.parse(
     document.getElementById("plot-data").textContent
   );
   const numPlots = signals.length;
@@ -121,6 +121,27 @@
       cursor: { sync: { key: sync.key } },
       axes: axes,
       series: [{}, seriesConfig],
+      hooks: {
+        draw: [
+          (u) => {
+            if (!eventTimes.length) return;
+            const { ctx } = u;
+            ctx.save();
+            ctx.strokeStyle = "rgba(255, 215, 0, 0.9)";
+            ctx.lineWidth = 2;
+            for (const t of eventTimes) {
+              const x = u.valToPos(t, "x", true);
+              if (x >= u.bbox.left && x <= u.bbox.left + u.bbox.width) {
+                ctx.beginPath();
+                ctx.moveTo(x, u.bbox.top);
+                ctx.lineTo(x, u.bbox.top + u.bbox.height);
+                ctx.stroke();
+              }
+            }
+            ctx.restore();
+          },
+        ],
+      },
     };
 
     const u = new uPlot(opts, [timeValues, sig.data], chartDivs[i]);

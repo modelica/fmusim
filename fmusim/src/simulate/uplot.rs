@@ -22,6 +22,8 @@ struct Signal {
 struct SimulationResults {
     time: Vec<f64>,
     signals: Vec<Signal>,
+    /// Times at state events (duplicate entries in `time`).
+    events: Vec<f64>,
 }
 
 #[derive(Template)]
@@ -80,8 +82,9 @@ pub fn render_html(trajectories: &Trajectories) {
     }
 
     let results = SimulationResults {
-        time: trajectories.time.clone(), // vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
+        time: trajectories.time.clone(),
         signals,
+        events: trajectories.events(),
         // signals: vec![
         //     Signal {
         //         name: "Temperature".to_string(),
