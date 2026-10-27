@@ -1,5 +1,7 @@
 use std::fs;
 use std::io;
+
+use askama::Template;
 use fmi_rs::model_description::fmi2::Variability;
 use fmi_rs::model_description::fmi2::VariableType;
 use fmi_rs::sim::fmi2::Trajectories;
@@ -22,204 +24,23 @@ struct SimulationResults {
     signals: Vec<Signal>,
 }
 
+#[derive(Template)]
+#[template(path = "multi_signal_report.html.askama")]
+struct MultiSignalReportTemplate {
+    time_json: String,
+    signals_json: String,
+}
+
 fn generate_html_report(results: &SimulationResults, output_path: &str) -> io::Result<()> {
-    // Serialize Rust data structures directly to JSON strings
     let time_json = serde_json::to_string(&results.time).unwrap();
     let signals_json = serde_json::to_string(&results.signals).unwrap();
 
-    let html_content = format!(
-        r##"<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Dynamic Multi-Signal Simulation Report</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.25/dist/uPlot.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/uplot@1.6.25/dist/uPlot.iife.min.js"></script>
-  <style>
-    html, body {{
-      height: 100%;
-      margin: 0;
-      padding: 20px;
-      box-sizing: border-box;
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #f4f4f9;
-    }}
-    .chart-container {{
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      background: #ffffff;
-      padding: 16px;
-      border-radius: 8px;
-      width: 100%;
-      min-height: 500px;
-      height: calc(100vh - 80px);
-      box-sizing: border-box;
-    }}
-    .chart-wrapper {{
-      display: flex;
-      flex-direction: column;
-    }}
-    .chart-wrapper > div {{
-      flex: 1;
-    }}
-  </style>
-</head>
-<body>
-
-  <div class="chart-container" id="container"></div>
-
-  <script>
-    // Injected dynamically from Rust
-    const timeValues = {time_json};
-    const signals = {signals_json};
-    const numPlots = signals.length;
-
-    const container = document.getElementById("container");
-    const sync = uPlot.sync("multi-signal-plots");
-    const Y_AXIS_WIDTH = 70;
-    const X_AXIS_SIZE = 35;
-    const PADDING_V = 20;
-    const GAP_SIZE = 12;
-
-    // Dynamically create DOM wrappers and chart divs for each signal
-    const wrappers = [];
-    const chartDivs = [];
-    const plots = [];
-
-    signals.forEach((sig, i) => {{
-      const wrapper = document.createElement("div");
-      wrapper.className = "chart-wrapper";
-      
-      const chartDiv = document.createElement("div");
-      chartDiv.id = `chart-${{i}}`;
-      
-      wrapper.appendChild(chartDiv);
-      container.appendChild(wrapper);
-      
-      wrappers.push(wrapper);
-      chartDivs.push(chartDiv);
-    }});
-
-    // Calculate height distributions proportional to the number of signals
-    function getHeights() {{
-      const totalInnerHeight = container.clientHeight - 32 - ((numPlots - 1) * GAP_SIZE);
-      const h = Math.max(80, (totalInnerHeight - (numPlots * PADDING_V) - X_AXIS_SIZE) / numPlots);
-
-      return signals.map((_, i) => {{
-        let plotHeight = h + PADDING_V;
-        if (i === numPlots - 1) {{
-          plotHeight += X_AXIS_SIZE; // Bottom plot includes space for x-axis labels/title
-        }}
-        return Math.floor(plotHeight);
-      }});
-    }}
-
-    function getWidth() {{
-      return container.clientWidth - 32;
-    }}
-
-    let currentWidth = getWidth();
-    let currentHeights = getHeights();
-
-    // Initialize plots
-    signals.forEach((sig, i) => {{
-      const isLast = i === numPlots - 1;
-      wrappers[i].style.flex = `${{currentHeights[i]}}`;
-
-      let valueMap = {{}};
-      let splitValues = [];
-
-      if (sig.y_ticks) {{
-        sig.y_ticks.forEach(([value, label]) => {{
-          valueMap[value] = label;
-          splitValues.push(value);
-        }});
-      }}
-
-      const seriesConfig = {{
-        label: sig.name,
-        stroke: sig.color,
-        fill: sig.fill,
-        width: 2    
-      }};
-
-      const scales = {{ x: {{ time: false }} }};
-      
-      if (sig.range) {{
-        scales.y = {{ range: () => sig.range }};
-      }}
-
-      // Apply step interpolation if flagged as discrete/stepped
-      if (sig.discrete) {{
-        seriesConfig.paths = uPlot.paths.stepped({{ align: 1 }});
-      }}
-
-      const yAxis = {{
-        label: `${{sig.name}}`,
-        size: Y_AXIS_WIDTH,
-        grid: {{ width: 1, stroke: "#eee" }},
-        ticks: {{ show: false }}
-      }};
-
-      if (splitValues.length > 0) {{
-        yAxis.splits = () => splitValues;
-        yAxis.values = (u, splits) => splits.map(v => valueMap[v] ?? v);
-      }}
-
-      const axes = [
-        isLast ? {{
-          size: X_AXIS_SIZE,
-          space: 40,
-          label: "time [s]",
-          grid: {{ width: 1, stroke: "#eee" }},
-          ticks: {{ show: false }}
-        }} : {{
-          size: 0,
-          grid: {{ show: true, width: 1, stroke: "#eee" }},
-          ticks: {{ show: false }},
-          values: () => []
-        }},
-        yAxis
-      ];
-
-      const opts = {{
-        width: currentWidth,
-        height: currentHeights[i],
-        padding: [10, 20, 10, 15],
-        scales: scales,
-        legend: {{ show: false }},
-        cursor: {{ sync: {{ key: sync.key }} }},
-        axes: axes,
-        series: [{{}}, seriesConfig]
-      }};
-
-      const u = new uPlot(opts, [timeValues, sig.data], chartDivs[i]);
-      plots.push(u);
-    }});
-
-    // Handle responsive resizing
-    const resizeObserver = new ResizeObserver(() => {{
-      const newWidth = getWidth();
-      const newHeights = getHeights();
-      
-      if (newWidth > 0) {{
-        signals.forEach((_, i) => {{
-          wrappers[i].style.flex = `${{newHeights[i]}}`;
-          plots[i].setSize({{ width: newWidth, height: newHeights[i] }});
-        }});
-      }}
-    }});
-
-    resizeObserver.observe(container);
-  </script>
-
-</body>
-</html>
-"##,
-        time_json = time_json,
-        signals_json = signals_json
-    );
+    let html_content = MultiSignalReportTemplate {
+        time_json,
+        signals_json,
+    }
+    .render()
+    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
     fs::write(output_path, html_content)
 }
