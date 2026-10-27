@@ -1,7 +1,8 @@
+use crate::simulate::uplot::{Signal, SimulationResults};
 use crate::simulate::{calculate_simulation_steps, plot, uplot};
 use crate::{InterfaceType, SimulateArgs, SolverType};
 use anyhow::{Context, bail};
-use fmi_rs::model_description::fmi2::{Causality, ModelDescription};
+use fmi_rs::model_description::fmi2::{Causality, ModelDescription, Variability, VariableType};
 use fmi_rs::sim::fmi2::csv::{read_csv, write_csv};
 use fmi_rs::sim::fmi2::input::StaticInput;
 use fmi_rs::sim::fmi2::recorder::Recorder;
@@ -120,35 +121,48 @@ pub fn simulate_fmu(
 
     if args.show_plot {
 
-        uplot::render_html(&trajectories);
+        let mut signals = vec![];
 
-        // let reference = if let Some(path) = &args.reference_file {
-        //     let reader = File::open(path)
-        //         .with_context(|| format!("Failed to read reference file '{path}'"))?;
-        //     let trajectories = read_csv(reader, model_description.clone())
-        //         .with_context(|| format!("Failed to parse reference file '{path}'"))?;
-        //     Some(trajectories)
-        // } else {
-        //     None
-        // };
+        for (i, variable) in trajectories.variables().enumerate() {
+            if let Some(values) = trajectories.trajectory_by_index(i) {
+                let data: Vec<f64> = values.iter().map(|v| v.to_f64().unwrap_or_default()).collect();
+                let mut name = variable.name.clone();
+                if let Some(unit) = trajectories.model_description.get_unit(variable) {
+                name = format!("{name} [{unit}]");
+                }
+                let (fill, y_ticks, range) = if matches!(variable.variableType, VariableType::Boolean { .. }) {
+                let y_ticks = Some(vec![
+                    (0.0, "false".to_string()), 
+                    (1.0, "true".to_string()),
+                ]);
+                (Some("rgba(0, 0, 255, 0.1)".to_string()), y_ticks, Some((-0.1, 1.1)))
+                } else {
+                (None, None, None)
+                };
 
-        // let html = plot::fmi2::render_html(
-        //     &trajectories,
-        //     reference.as_ref(),
-        //     args.show_markers,
-        //     args.show_events,
-        // )?;
+                let discrete = variable.variability !=  Variability::Continuous;
 
-        // let temp_path = tempfile::Builder::new()
-        //     .prefix(&format!("{}_", model_description.modelName))
-        //     .suffix(".html")
-        //     .tempfile()?
-        //     .into_temp_path();
+                let signal = Signal {
+                    name,
+                    color: "#3b82f6".to_string(),
+                    fill,
+                    discrete,
+                    data,
+                    y_ticks,
+                    range,
+                };
 
-        // let path = temp_path.to_path_buf();
-        // let _ = temp_path.persist(&path);
+                signals.push(signal);
+            }
+        }
 
-        // plot::show_html(&path, &html)?;
+        let results = SimulationResults {
+            time: trajectories.time.clone(),
+            signals,
+            events: trajectories.events(),
+        };
+
+        uplot::render_html(results);
     }
 
     result?;
