@@ -10,6 +10,7 @@
   const X_AXIS_SIZE = 35;
   const PADDING_V = 20;
   const GAP_SIZE = 12;
+  const MIN_PLOT_WIDTH = 320;
 
   const wrappers = [];
   const chartDivs = [];
@@ -43,7 +44,8 @@
   }
 
   function getWidth() {
-    return container.clientWidth - 32;
+    const inner = container.clientWidth - 32;
+    return Math.max(MIN_PLOT_WIDTH, inner);
   }
 
   let currentWidth = getWidth();

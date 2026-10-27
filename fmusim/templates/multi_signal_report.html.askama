@@ -22,9 +22,11 @@
       padding: 16px;
       border-radius: 8px;
       width: 100%;
+      min-width: 320px;
       min-height: 500px;
       height: calc(100vh - 80px);
       box-sizing: border-box;
+      overflow-x: auto;
     }
     .chart-wrapper {
       display: flex;
