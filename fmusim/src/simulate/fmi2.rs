@@ -144,7 +144,6 @@ pub fn simulate_fmu(
 
                 let signal = Signal {
                     name,
-                    color: "#3b82f6".to_string(),
                     fill,
                     discrete,
                     data,

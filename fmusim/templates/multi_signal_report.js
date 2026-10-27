@@ -11,6 +11,16 @@
   const PADDING_V = 20;
   const GAP_SIZE = 12;
   const MIN_PLOT_WIDTH = 320;
+  const SERIES_COLORS = [
+    "#229AEB",
+    "#FFA02C",
+    "#33CC33",
+    "#CC3333",
+    "#9933CC",
+    "#996633",
+    "#FF66B2",
+    "#999999",
+  ];
 
   const wrappers = [];
   const chartDivs = [];
@@ -67,7 +77,7 @@
 
     const seriesConfig = {
       label: sig.name,
-      stroke: sig.color,
+      stroke: SERIES_COLORS[0],
       fill: sig.fill,
       width: 2,
     };

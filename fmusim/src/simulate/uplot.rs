@@ -2,13 +2,11 @@ use std::fs;
 use std::io;
 
 use askama::Template;
-use fmi_rs::sim::fmi2::Trajectories;
 use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct Signal {
     pub name: String,
-    pub color: String,
     pub fill: Option<String>,
     pub discrete: bool,
     pub data: Vec<f64>,
