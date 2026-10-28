@@ -15,13 +15,11 @@ use fmi_rs::{
     },
     sundials::solver::ida::IdaSolverFactory,
 };
-use tempfile::NamedTempFile;
-
 use crate::{
     InterfaceType, SimulateArgs, SolverType,
     simulate::{
         calculate_simulation_steps,
-        uplot::{self, open_in_browser},
+        plot::{self, open_in_browser},
     },
 };
 
@@ -181,7 +179,7 @@ pub fn simulate_fmu(
             None
         };
 
-        let results = uplot::fmi3::simulation_results(&trajectories, ref_trajectories.as_ref());
+        let results = plot::fmi3::simulation_results(&trajectories, ref_trajectories.as_ref());
 
         let prefix = Path::new(&args.fmu_file)
             .file_stem()
@@ -196,7 +194,7 @@ pub fn simulate_fmu(
             .tempfile()
             .context("Failed to create temporary plot file")?;
 
-        uplot::render_html(&results, &output_path)?;
+        plot::render_html(&results, &output_path)?;
 
         open_in_browser(output_path)?;
     }

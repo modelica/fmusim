@@ -1,5 +1,5 @@
-use crate::simulate::uplot::open_in_browser;
-use crate::simulate::{calculate_simulation_steps, uplot};
+use crate::simulate::plot::open_in_browser;
+use crate::simulate::{calculate_simulation_steps, plot};
 use crate::{InterfaceType, SimulateArgs, SolverType};
 use anyhow::{Context, bail};
 use fmi_rs::model_description::fmi2::{Causality, ModelDescription};
@@ -130,7 +130,7 @@ pub fn simulate_fmu(
             None
         };
 
-        let results = uplot::fmi2::simulation_results(&trajectories, ref_trajectories.as_ref());
+        let results = plot::fmi2::simulation_results(&trajectories, ref_trajectories.as_ref());
 
         let prefix = Path::new(&args.fmu_file)
             .file_stem()
@@ -145,7 +145,7 @@ pub fn simulate_fmu(
             .tempfile()
             .context("Failed to create temporary plot file")?;
 
-        uplot::render_html(&results, &output_path)?;
+        plot::render_html(&results, &output_path)?;
 
         open_in_browser(output_path)?;
     }
