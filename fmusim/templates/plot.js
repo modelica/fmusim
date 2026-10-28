@@ -7,6 +7,8 @@
   const sync = uPlot.sync("fmusim-plot");
   const Y_AXIS_WIDTH = 70;
   const X_AXIS_SIZE = 35;
+  const X_AXIS_LABEL_SPACE = 40;
+  const BOTTOM_X_RESERVE = X_AXIS_SIZE + X_AXIS_LABEL_SPACE;
   const PADDING_V = 20;
   const GAP_SIZE = 12;
   const MIN_PLOT_WIDTH = 320;
@@ -76,12 +78,15 @@
 
   function getHeights() {
     const totalInnerHeight = container.clientHeight - 32 - ((numPlots - 1) * GAP_SIZE);
-    const h = Math.max(80, (totalInnerHeight - (numPlots * PADDING_V) - X_AXIS_SIZE) / numPlots);
+    const h = Math.max(
+      80,
+      (totalInnerHeight - numPlots * PADDING_V - BOTTOM_X_RESERVE) / numPlots
+    );
 
     return plots.map((_, i) => {
       let plotHeight = h + PADDING_V;
       if (i === numPlots - 1) {
-        plotHeight += X_AXIS_SIZE;
+        plotHeight += BOTTOM_X_RESERVE;
       }
       return Math.floor(plotHeight);
     });
@@ -160,7 +165,7 @@
       isLast
         ? {
             size: X_AXIS_SIZE,
-            space: 40,
+            space: X_AXIS_LABEL_SPACE,
             label: "time [s]",
             grid: { width: 1, stroke: "#eee" },
             ticks: { show: false },
