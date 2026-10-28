@@ -242,14 +242,6 @@ pub struct SimulateArgs {
     #[arg(long)]
     show_plot: bool,
 
-    /// Show markers in the plot
-    #[arg(long)]
-    show_markers: bool,
-
-    /// Show events in the plot
-    #[arg(long)]
-    show_events: bool,
-
     /// CSV file to read the reference output from
     #[arg(long)]
     reference_file: Option<String>,

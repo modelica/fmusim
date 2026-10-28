@@ -124,7 +124,7 @@ $ fmusim simulate BouncingBall.fmu --start-value h=1.7 --output-variable h --ref
 Let's use Model Exchange, change some simulation parameters, and log the FMI calls.
 
 ```console
-$ fmusim simulate BouncingBall.fmu --stop-time 2 --output-interval 0.02 --interface-type me --log-fmi-calls --show-plot --show-events --show-markers
+$ fmusim simulate BouncingBall.fmu --stop-time 2 --output-interval 0.02 --interface-type me --log-fmi-calls --show-plot
 [FMI] fmi3InstantiateModelExchange(instanceName="BouncingBall", instantiationToken="{1AE5E10D-9521-4DE3-80B9-D0EAAA7D5AF1}", resourcePath=None, visible=false, loggingOn=false, 
 instanceEnvironment=0x20b3b8f3d70, logMessage=0x7ff7fc08c800) -> 0x20b3b8d2e40
 [FMI] fmi3EnterInitializationMode(toleranceDefined=false, tolerance=0, startTime=0, stopTimeDefined=false, stopTime=0) -> fmi3OK
