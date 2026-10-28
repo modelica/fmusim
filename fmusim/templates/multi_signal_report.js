@@ -96,23 +96,23 @@
 
     let seriesColorIndex = 0;
     const seriesOpts = plot.series.map((s) => {
-      const colorIdx = s.dashed
+      const colorIdx = s.reference
         ? Math.max(0, seriesColorIndex - 1)
         : seriesColorIndex;
       const baseColor = SERIES_COLORS[colorIdx % SERIES_COLORS.length];
-      if (!s.dashed) {
+      if (!s.reference) {
         seriesColorIndex += 1;
       }
       const seriesConfig = {
         label: s.name,
-        stroke: s.dashed
+        stroke: s.reference
           ? seriesColor(baseColor, REFERENCE_ALPHA)
           : baseColor,
-        fill: s.dashed ? null : s.fill,
-        width: s.dashed ? 6 : 2,
+        fill: s.reference ? null : s.fill,
+        width: s.reference ? 6 : 2,
         dash: null,
       };
-      if (s.discrete && !s.dashed) {
+      if (s.discrete && !s.reference) {
         seriesConfig.paths = uPlot.paths.stepped({ align: 1 });
       }
       return seriesConfig;

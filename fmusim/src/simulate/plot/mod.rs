@@ -19,7 +19,7 @@ pub struct TimeSeries {
     pub time: Option<Vec<f64>>,
     pub fill: Option<String>,
     pub discrete: bool,
-    pub dashed: bool,
+    pub reference: bool,
     pub data: Vec<f64>,
 }
 

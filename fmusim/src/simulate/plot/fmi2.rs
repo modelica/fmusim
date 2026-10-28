@@ -45,7 +45,7 @@ pub fn simulation_results(
                 time: None,
                 fill,
                 discrete,
-                dashed: false,
+                reference: false,
                 data,
             }];
 
@@ -61,7 +61,7 @@ pub fn simulation_results(
                         time: Some(ref_trajectories.time.clone()),
                         fill: None,
                         discrete,
-                        dashed: true,
+                        reference: true,
                         data: ref_y,
                     });
                 }
