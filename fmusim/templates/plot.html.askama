@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Simulation Plot</title>
   <style>
+/*! https://github.com/leeoniya/uPlot (v1.6.25) */
 {% include "vendor/uPlot.min.css" %}
   </style>
   <style>
@@ -22,7 +23,7 @@
       width: 100%;
       min-width: 320px;
       min-height: 500px;
-      height: calc(100vh - 80px);
+      height: 100vh;
       box-sizing: border-box;
       overflow-x: auto;
     }
