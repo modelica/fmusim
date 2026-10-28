@@ -1,22 +1,14 @@
-use crate::simulate::{calculate_simulation_steps, split_time_intervals_ranges};
+use crate::simulate::plot::open_in_browser;
+use crate::simulate::{calculate_simulation_steps, plot};
 use crate::{InterfaceType, SimulateArgs, SolverType};
 use anyhow::{Context, bail};
-use fmi_rs::model_description::fmi2::{
-    Causality, ModelDescription, SimpleType, Variability, VariableType,
-};
+use fmi_rs::model_description::fmi2::{Causality, ModelDescription};
 use fmi_rs::sim::fmi2::csv::{read_csv, write_csv};
 use fmi_rs::sim::fmi2::input::StaticInput;
 use fmi_rs::sim::fmi2::recorder::Recorder;
 use fmi_rs::sim::fmi2::{SimulationSettings, Trajectories, cs, me};
 use fmi_rs::sim::solver::ForwardEulerFactory;
 use fmi_rs::sundials::solver::cvode::CVodeSolverFactory;
-use plotly::layout::AxisRange;
-use plotly::{
-    Configuration, Layout, Plot, Scatter,
-    color::NamedColor,
-    common::{Fill, Line, LineShape, Mode},
-    layout::{Axis, GridPattern, LayoutGrid, Margin, Shape, ShapeLayer, ShapeLine, ShapeType},
-};
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -127,8 +119,8 @@ pub fn simulate_fmu(
             .with_context(|| format!("Failed to write output file '{}'", output_file))?;
     }
 
-    if args.show_plot {
-        let reference = if let Some(path) = &args.reference_file {
+    if args.show_plot || args.plot_file.is_some() {
+        let ref_trajectories = if let Some(path) = &args.reference_file {
             let reader = File::open(path)
                 .with_context(|| format!("Failed to read reference file '{path}'"))?;
             let trajectories = read_csv(reader, model_description.clone())
@@ -138,198 +130,36 @@ pub fn simulate_fmu(
             None
         };
 
-        let plot = plot_result(
-            &trajectories,
-            reference.as_ref(),
-            args.show_markers,
-            args.show_events,
-        );
+        let mut results = plot::fmi2::simulation_results(&trajectories, ref_trajectories.as_ref());
+        results.log_x = args.log_time_scale;
 
-        // Generate a unique path in the temp directory starting with the model name
-        let temp_path = tempfile::Builder::new()
-            .prefix(&format!("{}_", model_description.modelName))
-            .suffix(".html")
-            .tempfile()?
-            .into_temp_path();
+        let html_path = if let Some(plot_path) = args.plot_file.as_deref() {
+            PathBuf::from(plot_path)
+        } else {
+            let prefix = Path::new(&args.fmu_file)
+                .file_stem()
+                .context("Failed to get FMU filename")?
+                .to_string_lossy()
+                .to_string();
 
-        let path = temp_path.to_path_buf();
-        // Prevent the file from being deleted immediately so the browser can read it
-        let _ = temp_path.persist(&path);
+            let output_path = tempfile::Builder::new()
+                .prefix(&prefix)
+                .suffix(".html")
+                .disable_cleanup(true)
+                .tempfile()
+                .context("Failed to create temporary plot file")?;
 
-        plot.show_html(path);
+            PathBuf::from(output_path.as_ref())
+        };
+
+        plot::render_html(&results, &html_path)?;
+
+        if args.show_plot {
+            open_in_browser(html_path)?;
+        }
     }
 
     result?;
 
     Ok(())
-}
-
-pub fn plot_result(
-    trajectories: &Trajectories,
-    _reference: Option<&Trajectories>,
-    show_markers: bool,
-    show_events: bool,
-) -> Plot {
-    let mut plot = Plot::new();
-
-    let plot_height = 250usize.saturating_mul(trajectories.len().max(1));
-
-    let grid_color = "rgba(211, 211, 211, 0.5)";
-
-    let mut x_axis = Axis::new()
-        .title("time [s]")
-        .zero_line_color(grid_color)
-        .grid_color(grid_color);
-
-    if let (Some(first), Some(last)) = (trajectories.time.first(), trajectories.time.last()) {
-        x_axis = x_axis.range(AxisRange::new(*first, *last));
-    }
-
-    let mut layout = Layout::new()
-        .title(trajectories.model_description.modelName.clone())
-        .x_axis(x_axis)
-        .grid(
-            LayoutGrid::new()
-                .rows(trajectories.len())
-                .columns(1)
-                .pattern(GridPattern::Coupled), // Link X axes in the same column
-        )
-        .height(plot_height)
-        .auto_size(true)
-        .show_legend(false)
-        .margin(Margin::new().top(30).bottom(40).left(65).right(30));
-
-    let mode = if show_markers {
-        Mode::LinesMarkers
-    } else {
-        Mode::Lines
-    };
-
-    for (variable_index, variable) in trajectories.variables().take(8).enumerate() {
-        let mut axis_title = variable.name.clone();
-
-        if let Some(unit) = trajectories.model_description.get_unit(variable) {
-            axis_title.push_str(format!(" [{unit}]").as_str());
-        }
-
-        let mut y_axis = Axis::new()
-            .title(axis_title.as_str())
-            .zero_line_color(grid_color)
-            .grid_color(grid_color);
-
-        if matches!(variable.variableType, VariableType::Boolean { .. }) {
-            y_axis = y_axis
-                .tick_values(vec![0.0, 1.0])
-                .tick_text(vec!["false", "true"])
-                .range(AxisRange::new(-0.01, 1.01))
-                .fixed_range(true);
-        }
-
-        // Use item names as tick text for enumeration variables
-        if let VariableType::Enumeration { declaredType, .. } = &variable.variableType {
-            if let Some(SimpleType::Enumeration { items, .. }) = trajectories
-                .model_description
-                .get_type_definition(declaredType)
-            {
-                let tick_values: Vec<i32> = items.iter().map(|item| item.value).collect();
-                let tick_text: Vec<String> = items.iter().map(|item| item.name.clone()).collect();
-
-                let min_value = tick_values.iter().min();
-                let max_value = tick_values.iter().max();
-
-                let tick_values = tick_values.iter().map(|v| *v as f64).collect();
-
-                y_axis = y_axis.tick_values(tick_values).tick_text(tick_text);
-
-                if let (Some(min_value), Some(max_value)) = (min_value, max_value) {
-                    y_axis = y_axis.range(AxisRange::new(*min_value, *max_value));
-                }
-            } else {
-                continue;
-            }
-        }
-
-        // Set y-axis titles for subplots (Plotly uses y1, y2, y3... internally)
-        layout = match variable_index {
-            0 => layout.y_axis(y_axis),
-            1 => layout.y_axis2(y_axis),
-            2 => layout.y_axis3(y_axis),
-            3 => layout.y_axis4(y_axis),
-            4 => layout.y_axis5(y_axis),
-            5 => layout.y_axis6(y_axis),
-            6 => layout.y_axis7(y_axis),
-            7 => layout.y_axis8(y_axis),
-            _ => layout, // The plotly crate typed API typically supports up to y_axis8
-        };
-
-        let time = trajectories.time.clone();
-        let name = variable.name.clone();
-        let row = variable_index.saturating_add(1);
-
-        if matches!(variable.variableType, VariableType::String { .. }) {
-            continue;
-        }
-
-        let values: Vec<f64> = match trajectories
-            .rows
-            .iter()
-            .map(|row| row.get(variable_index).and_then(|v| v.to_f64()))
-            .collect()
-        {
-            Some(values) => values,
-            None => continue,
-        };
-
-        let mut line = Line::new().width(1.5).color("#229AEB");
-
-        if variable.variability == Variability::Discrete {
-            line = line.shape(LineShape::Hv);
-        }
-
-        for range in split_time_intervals_ranges(&time) {
-            if let Some(time_slice) = time.get(range.clone())
-                && let Some(values_slice) = values.get(range)
-            {
-                let mut trace =
-                    Scatter::new(time_slice.to_owned(), values_slice.to_owned()).name(&name);
-
-                // Use the shared x-axis ("x") for all subplots
-                trace = trace
-                    .x_axis("x")
-                    .y_axis(format!("y{row}"))
-                    .line(line.clone())
-                    .mode(mode.clone());
-
-                if matches!(variable.variableType, VariableType::Boolean { .. }) {
-                    trace = trace.fill(Fill::ToZeroY).fill_color(NamedColor::AliceBlue);
-                }
-
-                plot.add_trace(trace);
-            }
-        }
-    }
-
-    if show_events {
-        let mut shapes = Vec::new();
-        for event_time in trajectories.events() {
-            let shape = Shape::new()
-                .shape_type(ShapeType::Line)
-                .x0(event_time)
-                .x1(event_time)
-                .y0(0.0) // Start from bottom of plot in paper coordinates
-                .y1(1.0) // End at top of plot in paper coordinates
-                .x_ref("x") // Reference the x-axis for horizontal position
-                .y_ref("paper") // Reference paper coordinates for vertical position
-                .layer(ShapeLayer::Below) // Draw the shape behind the traces
-                .line(ShapeLine::new().color(NamedColor::Gold).width(1.0));
-            shapes.push(shape);
-        }
-        layout = layout.shapes(shapes);
-    }
-
-    plot.set_layout(layout);
-
-    plot.set_configuration(Configuration::new().responsive(true));
-
-    plot
 }

@@ -111,6 +111,7 @@ pub enum ShellArg {
 }
 
 #[derive(Debug, Subcommand)]
+#[allow(clippy::large_enum_variant)]
 enum Commands {
     /// Display information about an FMU
     Info {
@@ -242,13 +243,9 @@ pub struct SimulateArgs {
     #[arg(long)]
     show_plot: bool,
 
-    /// Show markers in the plot
+    /// HTML file to write the plot to
     #[arg(long)]
-    show_markers: bool,
-
-    /// Show events in the plot
-    #[arg(long)]
-    show_events: bool,
+    plot_file: Option<String>,
 
     /// CSV file to read the reference output from
     #[arg(long)]

@@ -124,29 +124,26 @@ $ fmusim simulate BouncingBall.fmu --start-value h=1.7 --output-variable h --ref
 Let's use Model Exchange, change some simulation parameters, and log the FMI calls.
 
 ```console
-$ fmusim simulate BouncingBall.fmu --stop-time 2 --output-interval 0.02 --interface-type me --log-fmi-calls --show-plot --show-events --show-markers
-[FMI] fmi3InstantiateModelExchange(instanceName="BouncingBall", instantiationToken="{1AE5E10D-9521-4DE3-80B9-D0EAAA7D5AF1}", resourcePath=None, visible=false, loggingOn=false, 
-instanceEnvironment=0x20b3b8f3d70, logMessage=0x7ff7fc08c800) -> 0x20b3b8d2e40
-[FMI] fmi3EnterInitializationMode(toleranceDefined=false, tolerance=0, startTime=0, stopTimeDefined=false, stopTime=0) -> fmi3OK
+$ fmusim simulate BouncingBall.fmu --stop-time 2 --output-interval 0.02 --interface-type me --log-fmi-calls --show-plot
+[FMI] fmi3InstantiateModelExchange(instanceName="BouncingBall", instantiationToken="{1AE5E10D-9521-4DE3-80B9-D0EAAA7D5AF1}", resourcePath=None, visible=false, loggingOn=false)
+[FMI] fmi3EnterInitializationMode(tolerance=None, startTime=0.0, stopTime=None) -> fmi3OK
 [FMI] fmi3ExitInitializationMode() -> fmi3OK
-[FMI] fmi3UpdateDiscreteStates(discreteStatesNeedUpdate=false, terminateSimulation=false, nominalsOfContinuousStatesChanged=false, valuesOfContinuousStatesChanged=false, nextEventTimeDefined=false, 
-nextEventTime=0) -> fmi3OK
+[FMI] fmi3UpdateDiscreteStates(discreteStatesNeedUpdate=false, terminateSimulation=false, nominalsOfContinuousStatesChanged=false, valuesOfContinuousStatesChanged=false, nextEventTime=None) -> fmi3OK
 [FMI] fmi3EnterContinuousTimeMode() -> fmi3OK
 [FMI] fmi3GetNumberOfContinuousStates(nContinuousStates=2) -> fmi3OK
 [FMI] fmi3GetNumberOfEventIndicators(nEventIndicators=1) -> fmi3OK
-[FMI] fmi3GetContinuousStates(continuousStates=[1.0, 0.0], nContinuousStates=2) -> fmi3OK
-[FMI] fmi3GetNominalsOfContinuousStates(nominals=[1.0, 1.0], nNominals=2) -> fmi3OK
-[FMI] fmi3GetFloat64(valueReferences=[1], nValueReferences=1, values=[1.0], nValues=1) -> fmi3OK
-[FMI] fmi3GetFloat64(valueReferences=[3], nValueReferences=1, values=[0.0], nValues=1) -> fmi3OK
-[FMI] fmi3SetTime(time=0) -> fmi3OK
-[FMI] fmi3SetContinuousStates(continuousStates=[1.0, 0.0], nContinuousStates=2) -> fmi3OK
-[FMI] fmi3GetContinuousStateDerivatives(derivatives=[0.0, -9.81], nDerivatives=2) -> fmi3OK
-[FMI] fmi3SetTime(time=0.000000000010638260267131509) -> fmi3OK
-[FMI] fmi3SetContinuousStates(continuousStates=[1.0, -1.043613332205601e-10], nContinuousStates=2) -> fmi3OK
-[FMI] fmi3GetContinuousStateDerivatives(derivatives=[-1.043613332205601e-10, -9.81], nDerivatives=2) -> fmi3OK
+[FMI] fmi3GetContinuousStates(continuousStates=[1.0, 0.0]) -> fmi3OK
+[FMI] fmi3GetNominalsOfContinuousStates(nominals=[1.0, 1.0]) -> fmi3OK
+[FMI] fmi3GetFloat64(valueReferences=[1], values=[1.0]) -> fmi3OK
+[FMI] fmi3GetFloat64(valueReferences=[3], values=[0.0]) -> fmi3OK
+[FMI] fmi3SetTime(time=0.0) -> fmi3OK
+[FMI] fmi3SetContinuousStates(continuousStates=[1.0, 0.0]) -> fmi3OK
+[FMI] fmi3GetContinuousStateDerivatives(derivatives=[0.0, -9.81]) -> fmi3OK
+[FMI] fmi3SetTime(time=6.728226557161375e-11) -> fmi3OK
+[FMI] fmi3SetContinuousStates(continuousStates=[1.0, -6.600390252575309e-10]) -> fmi3OK
+[FMI] fmi3GetContinuousStateDerivatives(derivatives=[-6.600390252575309e-10, -9.81]) -> fmi3OK
 ...
 [FMI] fmi3Termiate() -> fmi3OK
-[FMI] fmi3FreeInstance()
 ```
 
 ![BoucingBall](assets/events.svg)

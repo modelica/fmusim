@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulation Plot</title>
+  <style>
+/*! https://github.com/leeoniya/uPlot (v1.6.25) */
+{% include "vendor/uPlot.min.css" %}
+  </style>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .chart-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      border-radius: 8px;
+      width: 100%;
+      min-width: 320px;
+      min-height: 500px;
+      height: 100vh;
+      box-sizing: border-box;
+      overflow-x: auto;
+    }
+    .chart-wrapper {
+      display: flex;
+      flex-direction: column;
+    }
+    .chart-wrapper > div {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="chart-container" id="container"></div>
+
+  <script>
+{% include "vendor/uPlot.iife.min.js" %}
+  </script>
+  <script type="application/json" id="plot-data">{{ plot_data_json|safe }}</script>
+  <script>
+{% include "plot.js" %}
+  </script>
+
+</body>
+</html>

@@ -6,32 +6,22 @@ use std::{
     vec,
 };
 
+use crate::{
+    InterfaceType, SimulateArgs, SolverType,
+    simulate::{
+        calculate_simulation_steps,
+        plot::{self, open_in_browser},
+    },
+};
 use anyhow::{Context, bail};
+use fmi_rs::{sim::fmi3::SimulationSettings, sundials::solver::cvode::CVodeSolverFactory};
 use fmi_rs::{
-    model_description::fmi3::{TypeDefinition, VariableType},
     sim::{
         fmi3::{Trajectories, csv::read_csv, input::StaticInput, recorder::Recorder},
         solver::ForwardEulerFactory,
     },
     sundials::solver::ida::IdaSolverFactory,
 };
-use fmi_rs::{sim::fmi3::SimulationSettings, sundials::solver::cvode::CVodeSolverFactory};
-use plotly::{
-    Configuration, Layout, Plot, Scatter,
-    color::NamedColor,
-    common::{Fill, Line, Mode},
-    layout::{
-        Axis, AxisRange, AxisType, GridPattern, LayoutGrid, Margin, Shape, ShapeLayer, ShapeLine,
-        ShapeType,
-    },
-};
-
-use crate::{
-    InterfaceType, SimulateArgs, SolverType,
-    simulate::{calculate_simulation_steps, split_time_intervals_ranges},
-};
-
-const MAX_PLOTS: usize = 8;
 
 pub fn simulate_fmu(
     args: &SimulateArgs,
@@ -178,7 +168,7 @@ pub fn simulate_fmu(
             .with_context(|| format!("Failed to write output file '{}'", output_file))?;
     }
 
-    if args.show_plot {
+    if args.show_plot || args.plot_file.is_some() {
         let ref_trajectories = if let Some(path) = &args.reference_file {
             let reader = File::open(path)
                 .with_context(|| format!("Failed to read reference file '{path}'"))?;
@@ -189,275 +179,36 @@ pub fn simulate_fmu(
             None
         };
 
-        let plot = plot_result(
-            &trajectories,
-            ref_trajectories.as_ref(),
-            args.show_markers,
-            args.show_events,
-            args.log_time_scale,
-        );
+        let mut results = plot::fmi3::simulation_results(&trajectories, ref_trajectories.as_ref());
+        results.log_x = args.log_time_scale;
 
-        // Generate a unique path in the temp directory starting with the model name
-        let temp_path = tempfile::Builder::new()
-            .prefix(&format!("{}_", model_description.modelName))
-            .suffix(".html")
-            .tempfile()?
-            .into_temp_path();
+        let html_path = if let Some(plot_path) = args.plot_file.as_deref() {
+            PathBuf::from(plot_path)
+        } else {
+            let prefix = Path::new(&args.fmu_file)
+                .file_stem()
+                .context("Failed to get FMU filename")?
+                .to_string_lossy()
+                .to_string();
 
-        let path = temp_path.to_path_buf();
-        // Prevent the file from being deleted immediately so the browser can read it
-        let _ = temp_path.persist(&path);
+            let output_path = tempfile::Builder::new()
+                .prefix(&prefix)
+                .suffix(".html")
+                .disable_cleanup(true)
+                .tempfile()
+                .context("Failed to create temporary plot file")?;
 
-        plot.show_html(path);
+            PathBuf::from(output_path.as_ref())
+        };
+
+        plot::render_html(&results, &html_path)?;
+
+        if args.show_plot {
+            open_in_browser(html_path)?;
+        }
     }
 
     result?;
 
     Ok(())
-}
-
-pub fn plot_result(
-    trajectories: &Trajectories,
-    ref_trajectories: Option<&Trajectories>,
-    show_markers: bool,
-    show_events: bool,
-    log_x: bool,
-) -> Plot {
-    let mut plot = Plot::new();
-
-    const COLORS: [&str; 8] = [
-        "#229AEB", // Muted Blue
-        "#FFA02C", // Orange
-        "#33CC33", // Green
-        "#CC3333", // Red
-        "#9933CC", // Purple
-        "#996633", // Brown
-        "#FF66B2", // Pink
-        "#999999", // Gray
-    ];
-
-    let plot_height = 250usize.saturating_mul(trajectories.len().max(1));
-
-    let grid_color = "rgba(211, 211, 211, 0.5)";
-
-    let mut x_axis = Axis::new()
-        .title("time [s]")
-        .zero_line_color(grid_color)
-        .grid_color(grid_color);
-
-    if log_x {
-        x_axis = x_axis.type_(AxisType::Log);
-    }
-
-    if let (Some(first), Some(last)) = (trajectories.time.first(), trajectories.time.last()) {
-        let (min, max) = if log_x {
-            let max = if *last > 0.0 { last.log10() } else { 2.0 };
-            let min = if *first > 0.0 {
-                first.log10()
-            } else {
-                max - 5.0
-            };
-            (min, max)
-        } else {
-            (*first, *last)
-        };
-        x_axis = x_axis.range(AxisRange::new(min, max));
-    }
-
-    let mut layout = Layout::new()
-        .title(trajectories.model_description.modelName.clone())
-        .x_axis(x_axis)
-        .grid(
-            LayoutGrid::new()
-                .rows(trajectories.len())
-                .columns(1)
-                .pattern(GridPattern::Coupled), // Link X axes in the same column
-        )
-        .height(plot_height)
-        .auto_size(true)
-        .show_legend(false)
-        .margin(Margin::new().top(30).bottom(40).left(65).right(30));
-
-    let mode = if show_markers {
-        Mode::LinesMarkers
-    } else {
-        Mode::Lines
-    };
-
-    for (variable_index, variable) in trajectories.variables().take(MAX_PLOTS).enumerate() {
-        let mut axis_title = variable.name.clone();
-
-        if let Some(unit) = trajectories.model_description.get_unit(variable) {
-            axis_title.push_str(format!(" [{unit}]").as_str());
-        }
-
-        let mut y_axis = Axis::new()
-            .title(axis_title.as_str())
-            .zero_line_color(grid_color)
-            .grid_color(grid_color);
-
-        if matches!(variable.variableType, VariableType::Boolean { .. }) {
-            y_axis = y_axis
-                .tick_values(vec![0.0, 1.0])
-                .tick_text(vec!["false", "true"])
-                .range(AxisRange::new(-0.01, 1.01))
-                .fixed_range(true);
-        }
-
-        // Use item names as tick text for enumeration variables
-        if let VariableType::Enumeration { declaredType, .. } = &variable.variableType {
-            if let Some(TypeDefinition::Enumeration { items, .. }) = trajectories
-                .model_description
-                .get_type_definition(declaredType)
-            {
-                let tick_values: Vec<i64> = items.iter().map(|item| item.value).collect();
-                let tick_text: Vec<String> = items.iter().map(|item| item.name.clone()).collect();
-
-                let min_value = tick_values.iter().min();
-                let max_value = tick_values.iter().max();
-
-                let tick_values = tick_values.iter().map(|v| *v as f64).collect();
-
-                y_axis = y_axis.tick_values(tick_values).tick_text(tick_text);
-
-                if let (Some(min_value), Some(max_value)) = (min_value, max_value) {
-                    y_axis = y_axis.range(AxisRange::new(*min_value, *max_value));
-                }
-            } else {
-                continue;
-            }
-        }
-
-        // Set y-axis titles for subplots (Plotly uses y1, y2, y3... internally)
-        layout = match variable_index {
-            0 => layout.y_axis(y_axis),
-            1 => layout.y_axis2(y_axis),
-            2 => layout.y_axis3(y_axis),
-            3 => layout.y_axis4(y_axis),
-            4 => layout.y_axis5(y_axis),
-            5 => layout.y_axis6(y_axis),
-            6 => layout.y_axis7(y_axis),
-            7 => layout.y_axis8(y_axis),
-            _ => layout, // The plotly crate typed API typically supports up to y_axis8
-        };
-
-        let time = trajectories.time.clone();
-        let name = variable.name.clone();
-        let row_index = variable_index.saturating_add(1);
-
-        if matches!(
-            variable.variableType,
-            VariableType::String { .. } | VariableType::Binary { .. }
-        ) {
-            continue;
-        }
-
-        let mut color_iter = COLORS.iter().cycle();
-
-        if let Some(first_row) = trajectories.rows.first()
-            && let Some(value) = first_row.get(variable_index)
-        {
-            let size = value.len();
-
-            let trajectory: Vec<Vec<f64>> = match trajectories
-                .rows
-                .iter()
-                .map(|row| row.get(variable_index).and_then(|v| v.as_f64()))
-                .collect()
-            {
-                Some(variable_values) => variable_values,
-                None => continue,
-            };
-
-            for j in 0..size {
-                let scalar_values: Vec<f64> =
-                    match trajectory.iter().map(|v| v.get(j).cloned()).collect() {
-                        Some(values) => values,
-                        None => continue,
-                    };
-
-                let name = if size > 1 {
-                    format!("{}[{}]", name, j)
-                } else {
-                    name.clone()
-                };
-
-                let current_color = color_iter.next().unwrap_or(&COLORS[0]);
-
-                if let Some(ref_trajectories) = ref_trajectories {
-                    let scalar_ref_values: Option<Vec<f64>> = ref_trajectories
-                        .rows
-                        .iter()
-                        .map(|row| {
-                            row.get(variable_index)
-                                .and_then(|v| v.as_f64())
-                                .and_then(|v| v.get(j).cloned())
-                        })
-                        .collect();
-
-                    if let Some(scalar_ref_values) = scalar_ref_values {
-                        let mut ref_trace =
-                            Scatter::new(ref_trajectories.time.clone(), scalar_ref_values)
-                                .name(name.clone());
-
-                        let ref_line = Line::new().width(3.0).color(format!("{current_color}44"));
-
-                        ref_trace = ref_trace
-                            .x_axis("x")
-                            .y_axis(format!("y{row_index}"))
-                            .line(ref_line);
-
-                        plot.add_trace(ref_trace);
-                    }
-                }
-
-                for range in split_time_intervals_ranges(&time) {
-                    if let Some(time_slice) = time.get(range.clone())
-                        && let Some(values_slice) = scalar_values.get(range)
-                    {
-                        let mut trace =
-                            Scatter::new(time_slice.to_owned(), values_slice.to_owned())
-                                .name(name.clone());
-
-                        // Use the shared x-axis ("x") for all subplots
-                        trace = trace
-                            .x_axis("x")
-                            .y_axis(format!("y{row_index}"))
-                            .line(Line::new().width(1.5).color(*current_color))
-                            .mode(mode.clone());
-
-                        if matches!(variable.variableType, VariableType::Boolean { .. }) {
-                            trace = trace.fill(Fill::ToZeroY).fill_color(NamedColor::AliceBlue);
-                        }
-
-                        plot.add_trace(trace);
-                    }
-                }
-            }
-        }
-    }
-
-    if show_events {
-        let mut shapes = Vec::new();
-        for event_time in trajectories.events() {
-            let shape = Shape::new()
-                .shape_type(ShapeType::Line)
-                .x0(event_time)
-                .x1(event_time)
-                .y0(0.0) // Start from bottom of plot in paper coordinates
-                .y1(1.0) // End at top of plot in paper coordinates
-                .x_ref("x") // Reference the x-axis for horizontal position
-                .y_ref("paper") // Reference paper coordinates for vertical position
-                .layer(ShapeLayer::Below) // Draw the shape behind the traces
-                .line(ShapeLine::new().color(NamedColor::Gold).width(1.0));
-            shapes.push(shape);
-        }
-        layout = layout.shapes(shapes);
-    }
-
-    plot.set_layout(layout);
-
-    plot.set_configuration(Configuration::new().responsive(true));
-
-    plot
 }

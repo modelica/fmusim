@@ -81,7 +81,7 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
     let mut problems_found = false;
 
     let zip_problems = validate_zip_archive(fmu_file);
-    
+
     problems_found |= !zip_problems.is_empty();
 
     for problem in zip_problems {
@@ -100,7 +100,7 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
     };
 
     problems_found |= !schema_problems.is_empty();
-    
+
     for problem in schema_problems {
         eprintln!("{red}error{red:#}: {problem}");
     }
@@ -127,7 +127,7 @@ pub fn validate_fmu(fmu_file: &str) -> anyhow::Result<()> {
     };
 
     problems_found |= !semantic_problems.is_empty();
-    
+
     for problem in &semantic_problems {
         render_xml_error(&text, problem);
     }

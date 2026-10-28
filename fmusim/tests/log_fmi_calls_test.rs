@@ -17,12 +17,7 @@ fn test_log_fmi_calls(
     ));
     let fmu = fmu_file.to_string_lossy();
 
-    let base_args = [
-        "simulate",
-        &fmu,
-        "--stop-time=0.1",
-        "--output-interval=0.1",
-    ];
+    let base_args = ["simulate", &fmu, "--stop-time=0.1", "--output-interval=0.1"];
 
     let without_logging = run_fmusim(&base_args);
     let stderr_without = String::from_utf8_lossy(&without_logging.stderr);
