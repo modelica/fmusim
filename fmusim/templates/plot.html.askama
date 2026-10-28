@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Dynamic Multi-Signal Simulation Report</title>
+  <title>Simulation Plot</title>
   <style>
 {% include "vendor/uPlot.min.css" %}
   </style>
@@ -44,7 +44,7 @@
   </script>
   <script type="application/json" id="plot-data">{{ plot_data_json|safe }}</script>
   <script>
-{% include "multi_signal_report.js" %}
+{% include "plot.js" %}
   </script>
 
 </body>

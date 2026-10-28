@@ -42,8 +42,8 @@ pub struct SimulationResults {
 }
 
 #[derive(Template)]
-#[template(path = "multi_signal_report.html.askama")]
-struct MultiSignalReportTemplate {
+#[template(path = "plot.html.askama")]
+struct PlotTemplate {
     plot_data_json: String,
 }
 
@@ -51,7 +51,7 @@ pub fn render_html(results: &SimulationResults, output_path: impl AsRef<Path>) -
     let plot_data_json = serde_json::to_string(results)
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
-    let html_content = MultiSignalReportTemplate { plot_data_json }
+    let html_content = PlotTemplate { plot_data_json }
         .render()
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
@@ -59,9 +59,9 @@ pub fn render_html(results: &SimulationResults, output_path: impl AsRef<Path>) -
 }
 
 // pub fn render_html(results: SimulationResults) {
-//     generate_html_report(&results, "multi_signal_report.html").expect("Failed to write report");
+//     generate_html_report(&results, "plot.html").expect("Failed to write report");
 
-//     println!("Multi-signal report generated successfully at multi_signal_report.html");
+//     println!("Plot report generated successfully at plot.html");
 // }
 
 pub fn open_in_browser(path: impl AsRef<Path>) -> anyhow::Result<()> {

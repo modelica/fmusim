@@ -4,7 +4,7 @@
   const numPlots = plots.length;
 
   const container = document.getElementById("container");
-  const sync = uPlot.sync("multi-signal-plots");
+  const sync = uPlot.sync("fmusim-plot");
   const Y_AXIS_WIDTH = 70;
   const X_AXIS_SIZE = 35;
   const PADDING_V = 20;
