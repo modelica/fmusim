@@ -130,12 +130,22 @@ pub fn simulate_fmu(
             None
         };
 
-        let results =
-            uplot::fmi2::simulation_results(&trajectories, ref_trajectories.as_ref());
+        let results = uplot::fmi2::simulation_results(&trajectories, ref_trajectories.as_ref());
 
-        let output_path = "multi_signal_report.html";
+        let prefix = Path::new(&args.fmu_file)
+            .file_stem()
+            .context("Failed to get FMU filename")?
+            .to_string_lossy()
+            .to_string();
 
-        uplot::render_html(&results, output_path)?;
+        let output_path = tempfile::Builder::new()
+            .prefix(&prefix)
+            .suffix(".html")
+            .disable_cleanup(true)
+            .tempfile()
+            .context("Failed to create temporary plot file")?;
+
+        uplot::render_html(&results, &output_path)?;
 
         open_in_browser(output_path)?;
     }

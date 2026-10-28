@@ -57,7 +57,8 @@ pub fn simulation_results(
         let mut series = Vec::new();
 
         for j in 0..size {
-            let scalar_values: Option<Vec<f64>> = trajectory.iter().map(|v| v.get(j).cloned()).collect();
+            let scalar_values: Option<Vec<f64>> =
+                trajectory.iter().map(|v| v.get(j).cloned()).collect();
             let data = match scalar_values {
                 Some(values) if values.len() == time.len() => values,
                 _ => continue,
@@ -123,7 +124,11 @@ pub fn simulation_results(
 fn panel_axis_hints(
     trajectories: &Trajectories,
     variable: &fmi_rs::model_description::fmi3::ModelVariable,
-) -> (Option<String>, Option<Vec<(f64, String)>>, Option<(f64, f64)>) {
+) -> (
+    Option<String>,
+    Option<Vec<(f64, String)>>,
+    Option<(f64, f64)>,
+) {
     if matches!(variable.variableType, VariableType::Boolean { .. }) {
         return (
             Some("rgba(0, 0, 255, 0.1)".to_string()),

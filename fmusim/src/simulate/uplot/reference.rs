@@ -1,5 +1,9 @@
 /// Resample reference samples onto the simulation time grid (linear interpolation).
-pub fn resample_to_sim_time(sim_time: &[f64], ref_time: &[f64], ref_values: &[f64]) -> Option<Vec<f64>> {
+pub fn resample_to_sim_time(
+    sim_time: &[f64],
+    ref_time: &[f64],
+    ref_values: &[f64],
+) -> Option<Vec<f64>> {
     if ref_time.is_empty() || ref_time.len() != ref_values.len() || sim_time.is_empty() {
         return None;
     }
@@ -21,12 +25,19 @@ pub fn resample_to_sim_time(sim_time: &[f64], ref_time: &[f64], ref_values: &[f6
             continue;
         }
 
-        let i = ref_time.partition_point(|&rt| rt < t).saturating_sub(1).min(last - 1);
+        let i = ref_time
+            .partition_point(|&rt| rt < t)
+            .saturating_sub(1)
+            .min(last - 1);
         let t0 = ref_time[i];
         let t1 = ref_time[i + 1];
         let y0 = ref_values[i];
         let y1 = ref_values[i + 1];
-        let y = if t1 == t0 { y0 } else { y0 + (y1 - y0) * (t - t0) / (t1 - t0) };
+        let y = if t1 == t0 {
+            y0
+        } else {
+            y0 + (y1 - y0) * (t - t0) / (t1 - t0)
+        };
         out.push(y);
     }
 

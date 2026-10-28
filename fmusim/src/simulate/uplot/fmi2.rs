@@ -13,7 +13,10 @@ pub fn simulation_results(
 
     for (i, variable) in trajectories.variables().enumerate() {
         if let Some(values) = trajectories.trajectory_by_index(i) {
-            let data: Vec<f64> = values.iter().map(|v| v.to_f64().unwrap_or_default()).collect();
+            let data: Vec<f64> = values
+                .iter()
+                .map(|v| v.to_f64().unwrap_or_default())
+                .collect();
             if data.len() != time.len() {
                 continue;
             }
@@ -23,15 +26,17 @@ pub fn simulation_results(
                 title = format!("{title} [{unit}]");
             }
 
-            let (fill, y_ticks, range) = if matches!(variable.variableType, VariableType::Boolean { .. }) {
-                let y_ticks = Some(vec![
-                    (0.0, "false".to_string()),
-                    (1.0, "true".to_string()),
-                ]);
-                (Some("rgba(0, 0, 255, 0.1)".to_string()), y_ticks, Some((-0.1, 1.1)))
-            } else {
-                (None, None, None)
-            };
+            let (fill, y_ticks, range) =
+                if matches!(variable.variableType, VariableType::Boolean { .. }) {
+                    let y_ticks = Some(vec![(0.0, "false".to_string()), (1.0, "true".to_string())]);
+                    (
+                        Some("rgba(0, 0, 255, 0.1)".to_string()),
+                        y_ticks,
+                        Some((-0.1, 1.1)),
+                    )
+                } else {
+                    (None, None, None)
+                };
 
             let discrete = variable.variability != Variability::Continuous;
             let series_name = variable.name.clone();
@@ -45,9 +50,13 @@ pub fn simulation_results(
             }];
 
             if let Some(ref_trajectories) = ref_trajectories {
-                let ref_values: Option<Vec<f64>> = ref_trajectories
-                    .trajectory_by_index(i)
-                    .map(|values| values.iter().map(|v| v.to_f64().unwrap_or_default()).collect());
+                let ref_values: Option<Vec<f64>> =
+                    ref_trajectories.trajectory_by_index(i).map(|values| {
+                        values
+                            .iter()
+                            .map(|v| v.to_f64().unwrap_or_default())
+                            .collect()
+                    });
 
                 if let Some(ref_y) = ref_values
                     && let Some(ref_data) =

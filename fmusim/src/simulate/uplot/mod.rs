@@ -45,8 +45,8 @@ struct MultiSignalReportTemplate {
 }
 
 pub fn render_html(results: &SimulationResults, output_path: impl AsRef<Path>) -> io::Result<()> {
-    let plot_data_json =
-        serde_json::to_string(results).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    let plot_data_json = serde_json::to_string(results)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
     let html_content = MultiSignalReportTemplate { plot_data_json }
         .render()
