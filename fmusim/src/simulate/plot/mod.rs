@@ -38,6 +38,7 @@ pub struct SimulationResults {
     pub plots: Vec<Plot>,
     /// Times at state events (duplicate entries in `time`).
     pub events: Vec<f64>,
+    pub log_x: bool,
 }
 
 #[derive(Template)]

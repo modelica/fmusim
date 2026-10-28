@@ -179,7 +179,8 @@ pub fn simulate_fmu(
             None
         };
 
-        let results = plot::fmi3::simulation_results(&trajectories, ref_trajectories.as_ref());
+        let mut results = plot::fmi3::simulation_results(&trajectories, ref_trajectories.as_ref());
+        results.log_x = args.log_time_scale;
 
         let prefix = Path::new(&args.fmu_file)
             .file_stem()

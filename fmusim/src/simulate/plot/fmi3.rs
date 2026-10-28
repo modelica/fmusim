@@ -116,6 +116,7 @@ pub fn simulation_results(
         time,
         plots,
         events: trajectories.events(),
+        log_x: false,
     }
 }
 

@@ -1,7 +1,6 @@
 (function () {
-  const { time: timeValues, plots, events: eventTimes = [] } = JSON.parse(
-    document.getElementById("plot-data").textContent
-  );
+  const { time: timeValues, plots, events: eventTimes = [], log_x: logX = false } =
+    JSON.parse(document.getElementById("plot-data").textContent);
   const numPlots = plots.length;
 
   const container = document.getElementById("container");
@@ -33,7 +32,23 @@
   }
 
   function buildPlotData(globalTime, series) {
-    const tables = series.map((s) => [s.time ?? globalTime, s.data]);
+    const tables = series.map((s) => {
+      let x = s.time ?? globalTime;
+      let y = s.data;
+      if (logX) {
+        const fx = [];
+        const fy = [];
+        for (let i = 0; i < x.length; i++) {
+          if (x[i] > 0) {
+            fx.push(x[i]);
+            fy.push(y[i]);
+          }
+        }
+        x = fx;
+        y = fy;
+      }
+      return [x, y];
+    });
     const data = uPlot.join(tables);
     for (let i = 1; i < data.length; i++) {
       data[i] = data[i].map((v) => (v === undefined ? null : v));
@@ -118,7 +133,12 @@
       return seriesConfig;
     });
 
-    const scales = { x: { time: false } };
+    const scales = {
+      x: {
+        time: false,
+        ...(logX ? { distr: 3 } : {}),
+      },
+    };
 
     if (plot.range) {
       scales.y = { range: () => plot.range };
@@ -174,6 +194,7 @@
             ctx.strokeStyle = "rgba(255, 215, 0, 0.9)";
             ctx.lineWidth = 1;
             for (const t of eventTimes) {
+              if (logX && t <= 0) continue;
               const x = u.valToPos(t, "x", true);
               if (x >= u.bbox.left && x <= u.bbox.left + u.bbox.width) {
                 ctx.beginPath();
