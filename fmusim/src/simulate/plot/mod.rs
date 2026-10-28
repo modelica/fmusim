@@ -9,12 +9,14 @@ use serde::Serialize;
 
 pub mod fmi2;
 pub mod fmi3;
-pub(crate) mod reference;
 
 /// One trace in a subplot (shared x / y scale with siblings in the same plot).
 #[derive(Serialize)]
 pub struct TimeSeries {
     pub name: String,
+    /// When set (reference traces), x values for this series; simulation uses global `time`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub time: Option<Vec<f64>>,
     pub fill: Option<String>,
     pub discrete: bool,
     pub dashed: bool,

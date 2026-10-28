@@ -32,6 +32,15 @@
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
+  function buildPlotData(globalTime, series) {
+    const tables = series.map((s) => [s.time ?? globalTime, s.data]);
+    const data = uPlot.join(tables);
+    for (let i = 1; i < data.length; i++) {
+      data[i] = data[i].map((v) => (v === undefined ? null : v));
+    }
+    return data;
+  }
+
   const wrappers = [];
   const chartDivs = [];
   const uplots = [];
@@ -145,7 +154,7 @@
       yAxis,
     ];
 
-    const data = [timeValues, ...plot.series.map((s) => s.data)];
+    const data = buildPlotData(timeValues, plot.series);
 
     const opts = {
       width: currentWidth,

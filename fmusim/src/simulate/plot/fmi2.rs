@@ -1,7 +1,6 @@
 use fmi_rs::model_description::fmi2::{Variability, VariableType};
 use fmi_rs::sim::fmi2::Trajectories;
 
-use super::reference::resample_to_sim_time;
 use super::{Plot, SimulationResults, TimeSeries};
 
 pub fn simulation_results(
@@ -43,6 +42,7 @@ pub fn simulation_results(
 
             let mut series = vec![TimeSeries {
                 name: series_name.clone(),
+                time: None,
                 fill,
                 discrete,
                 dashed: false,
@@ -50,24 +50,19 @@ pub fn simulation_results(
             }];
 
             if let Some(ref_trajectories) = ref_trajectories {
-                let ref_values: Option<Vec<f64>> =
-                    ref_trajectories.trajectory_by_index(i).map(|values| {
-                        values
-                            .iter()
-                            .map(|v| v.to_f64().unwrap_or_default())
-                            .collect()
-                    });
-
-                if let Some(ref_y) = ref_values
-                    && let Some(ref_data) =
-                        resample_to_sim_time(&time, &ref_trajectories.time, &ref_y)
-                {
+                if let Some(ref_y) = ref_trajectories.trajectory_by_index(i).map(|values| {
+                    values
+                        .iter()
+                        .map(|v| v.to_f64().unwrap_or_default())
+                        .collect::<Vec<f64>>()
+                }) {
                     series.push(TimeSeries {
                         name: format!("{series_name} (reference)"),
+                        time: Some(ref_trajectories.time.clone()),
                         fill: None,
                         discrete,
                         dashed: true,
-                        data: ref_data,
+                        data: ref_y,
                     });
                 }
             }

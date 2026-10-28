@@ -1,7 +1,6 @@
 use fmi_rs::model_description::fmi3::{TypeDefinition, VariableType};
 use fmi_rs::sim::fmi3::Trajectories;
 
-use super::reference::resample_to_sim_time;
 use super::{Plot, SimulationResults, TimeSeries};
 
 pub const MAX_PLOTS: usize = 8;
@@ -72,6 +71,7 @@ pub fn simulation_results(
 
             series.push(TimeSeries {
                 name: series_name.clone(),
+                time: None,
                 fill: fill.clone(),
                 discrete: false,
                 dashed: false,
@@ -89,16 +89,14 @@ pub fn simulation_results(
                     })
                     .collect();
 
-                if let Some(ref_y) = scalar_ref_values
-                    && let Some(ref_data) =
-                        resample_to_sim_time(&time, &ref_trajectories.time, &ref_y)
-                {
+                if let Some(ref_y) = scalar_ref_values {
                     series.push(TimeSeries {
                         name: format!("{series_name} (reference)"),
+                        time: Some(ref_trajectories.time.clone()),
                         fill: None,
                         discrete: false,
                         dashed: true,
-                        data: ref_data,
+                        data: ref_y,
                     });
                 }
             }
