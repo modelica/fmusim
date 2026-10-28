@@ -168,7 +168,7 @@ pub fn simulate_fmu(
             .with_context(|| format!("Failed to write output file '{}'", output_file))?;
     }
 
-    if args.show_plot {
+    if args.show_plot || args.plot_file.is_some() {
         let ref_trajectories = if let Some(path) = &args.reference_file {
             let reader = File::open(path)
                 .with_context(|| format!("Failed to read reference file '{path}'"))?;
@@ -182,22 +182,30 @@ pub fn simulate_fmu(
         let mut results = plot::fmi3::simulation_results(&trajectories, ref_trajectories.as_ref());
         results.log_x = args.log_time_scale;
 
-        let prefix = Path::new(&args.fmu_file)
-            .file_stem()
-            .context("Failed to get FMU filename")?
-            .to_string_lossy()
-            .to_string();
+        if let Some(plot_path) = args.plot_file.as_deref() {
+            plot::render_html(&results, plot_path)
+                .with_context(|| format!("Failed to write plot file '{plot_path}'"))?;
+            if args.show_plot {
+                open_in_browser(plot_path)?;
+            }
+        } else {
+            let prefix = Path::new(&args.fmu_file)
+                .file_stem()
+                .context("Failed to get FMU filename")?
+                .to_string_lossy()
+                .to_string();
 
-        let output_path = tempfile::Builder::new()
-            .prefix(&prefix)
-            .suffix(".html")
-            .disable_cleanup(true)
-            .tempfile()
-            .context("Failed to create temporary plot file")?;
+            let output_path = tempfile::Builder::new()
+                .prefix(&prefix)
+                .suffix(".html")
+                .disable_cleanup(true)
+                .tempfile()
+                .context("Failed to create temporary plot file")?;
 
-        plot::render_html(&results, &output_path)?;
+            plot::render_html(&results, &output_path)?;
 
-        open_in_browser(output_path)?;
+            open_in_browser(output_path)?;
+        }
     }
 
     result?;

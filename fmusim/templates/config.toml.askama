@@ -11,6 +11,7 @@ fmu_file = "{{ simulate_args.fmu_file }}"
 
 # log_fmi_calls = true
 # show_plot = true
+# plot_file = {{ filename }}_plot.html
 
 # start_values = [
 {%- for (name, value) in simulate_args.start_values %}

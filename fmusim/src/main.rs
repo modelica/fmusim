@@ -242,6 +242,10 @@ pub struct SimulateArgs {
     #[arg(long)]
     show_plot: bool,
 
+    /// HTML file to write the plot to
+    #[arg(long)]
+    plot_file: Option<String>,
+
     /// CSV file to read the reference output from
     #[arg(long)]
     reference_file: Option<String>,

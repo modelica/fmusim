@@ -139,6 +139,11 @@ pub fn simulate_config(config_file: &str) -> anyhow::Result<()> {
         .as_ref()
         .map(|path| resolve_config_path(config_dir, path));
 
+    toml_args.plot_file = toml_args
+        .plot_file
+        .as_ref()
+        .map(|path| resolve_config_path(config_dir, path));
+
     toml_args.initial_fmu_state_file = toml_args
         .initial_fmu_state_file
         .as_ref()
