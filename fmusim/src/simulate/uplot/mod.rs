@@ -1,6 +1,9 @@
 use std::fs;
 use std::io;
+use std::path::Path;
+use std::process::Command;
 
+use anyhow::Context;
 use askama::Template;
 use serde::Serialize;
 
@@ -41,7 +44,7 @@ struct MultiSignalReportTemplate {
     plot_data_json: String,
 }
 
-fn generate_html_report(results: &SimulationResults, output_path: &str) -> io::Result<()> {
+pub fn render_html(results: &SimulationResults, output_path: impl AsRef<Path>) -> io::Result<()> {
     let plot_data_json =
         serde_json::to_string(results).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
@@ -52,8 +55,41 @@ fn generate_html_report(results: &SimulationResults, output_path: &str) -> io::R
     fs::write(output_path, html_content)
 }
 
-pub fn render_html(results: SimulationResults) {
-    generate_html_report(&results, "multi_signal_report.html").expect("Failed to write report");
+// pub fn render_html(results: SimulationResults) {
+//     generate_html_report(&results, "multi_signal_report.html").expect("Failed to write report");
 
-    println!("Multi-signal report generated successfully at multi_signal_report.html");
+//     println!("Multi-signal report generated successfully at multi_signal_report.html");
+// }
+
+pub fn open_in_browser(path: impl AsRef<Path>) -> anyhow::Result<()> {
+    let path_str = path
+        .as_ref()
+        .to_str()
+        .context("Plot path is not valid UTF-8 for opening in browser")?;
+
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("cmd")
+            .args(["/C", "start", "", path_str])
+            .spawn()
+            .context("Failed to open plot in browser")?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(path_str)
+            .spawn()
+            .context("Failed to open plot in browser")?;
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        Command::new("xdg-open")
+            .arg(path_str)
+            .spawn()
+            .context("Failed to open plot in browser")?;
+    }
+
+    Ok(())
 }

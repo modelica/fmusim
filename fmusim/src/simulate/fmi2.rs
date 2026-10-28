@@ -1,3 +1,4 @@
+use crate::simulate::uplot::open_in_browser;
 use crate::simulate::{calculate_simulation_steps, uplot};
 use crate::{InterfaceType, SimulateArgs, SolverType};
 use anyhow::{Context, bail};
@@ -131,7 +132,12 @@ pub fn simulate_fmu(
 
         let results =
             uplot::fmi2::simulation_results(&trajectories, ref_trajectories.as_ref());
-        uplot::render_html(results);
+
+        let output_path = "multi_signal_report.html";
+
+        uplot::render_html(&results, output_path)?;
+
+        open_in_browser(output_path)?;
     }
 
     result?;

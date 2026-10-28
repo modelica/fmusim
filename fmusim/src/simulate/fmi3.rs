@@ -17,8 +17,7 @@ use fmi_rs::{
 use fmi_rs::{sim::fmi3::SimulationSettings, sundials::solver::cvode::CVodeSolverFactory};
 
 use crate::{
-    InterfaceType, SimulateArgs, SolverType,
-    simulate::{calculate_simulation_steps, uplot},
+    InterfaceType, SimulateArgs, SolverType, simulate::{calculate_simulation_steps, uplot::{self, open_in_browser}},
 };
 
 pub fn simulate_fmu(
@@ -179,7 +178,12 @@ pub fn simulate_fmu(
 
         let results =
             uplot::fmi3::simulation_results(&trajectories, ref_trajectories.as_ref());
-        uplot::render_html(results);
+
+        let output_path = "multi_signal_report.html";
+
+        uplot::render_html(&results, output_path)?;
+
+        open_in_browser(output_path)?;
     }
 
     result?;

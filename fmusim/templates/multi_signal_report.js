@@ -100,7 +100,7 @@
           ? seriesColor(baseColor, REFERENCE_ALPHA)
           : baseColor,
         fill: s.dashed ? null : s.fill,
-        width: s.dashed ? 5 : 2,
+        width: s.dashed ? 6 : 2,
         dash: null,
       };
       if (s.discrete && !s.dashed) {
