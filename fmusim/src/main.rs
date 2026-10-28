@@ -111,6 +111,7 @@ pub enum ShellArg {
 }
 
 #[derive(Debug, Subcommand)]
+#[allow(clippy::large_enum_variant)]
 enum Commands {
     /// Display information about an FMU
     Info {
