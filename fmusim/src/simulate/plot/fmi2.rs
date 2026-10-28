@@ -49,22 +49,22 @@ pub fn simulation_results(
                 data,
             }];
 
-            if let Some(ref_trajectories) = ref_trajectories {
-                if let Some(ref_y) = ref_trajectories.trajectory_by_index(i).map(|values| {
+            if let Some(ref_trajectories) = ref_trajectories
+                && let Some(ref_y) = ref_trajectories.trajectory_by_index(i).map(|values| {
                     values
                         .iter()
                         .map(|v| v.to_f64().unwrap_or_default())
                         .collect::<Vec<f64>>()
-                }) {
-                    series.push(TimeSeries {
-                        name: format!("{series_name} (reference)"),
-                        time: Some(ref_trajectories.time.clone()),
-                        fill: None,
-                        discrete,
-                        reference: true,
-                        data: ref_y,
-                    });
-                }
+                })
+            {
+                series.push(TimeSeries {
+                    name: format!("{series_name} (reference)"),
+                    time: Some(ref_trajectories.time.clone()),
+                    fill: None,
+                    discrete,
+                    reference: true,
+                    data: ref_y,
+                });
             }
 
             plots.push(Plot {

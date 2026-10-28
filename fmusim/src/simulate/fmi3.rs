@@ -6,6 +6,13 @@ use std::{
     vec,
 };
 
+use crate::{
+    InterfaceType, SimulateArgs, SolverType,
+    simulate::{
+        calculate_simulation_steps,
+        plot::{self, open_in_browser},
+    },
+};
 use anyhow::{Context, bail};
 use fmi_rs::{sim::fmi3::SimulationSettings, sundials::solver::cvode::CVodeSolverFactory};
 use fmi_rs::{
@@ -14,13 +21,6 @@ use fmi_rs::{
         solver::ForwardEulerFactory,
     },
     sundials::solver::ida::IdaSolverFactory,
-};
-use crate::{
-    InterfaceType, SimulateArgs, SolverType,
-    simulate::{
-        calculate_simulation_steps,
-        plot::{self, open_in_browser},
-    },
 };
 
 pub fn simulate_fmu(

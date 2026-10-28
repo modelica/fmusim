@@ -5,6 +5,12 @@ use super::{Plot, SimulationResults, TimeSeries};
 
 pub const MAX_PLOTS: usize = 8;
 
+struct PanelAxisHints {
+    fill: Option<String>,
+    y_ticks: Option<Vec<(f64, String)>>,
+    range: Option<(f64, f64)>,
+}
+
 pub fn simulation_results(
     trajectories: &Trajectories,
     ref_trajectories: Option<&Trajectories>,
@@ -34,7 +40,11 @@ pub fn simulation_results(
             title = format!("{title} [{unit}]");
         }
 
-        let (fill, y_ticks, range) = panel_axis_hints(trajectories, variable);
+        let PanelAxisHints {
+            fill,
+            y_ticks,
+            range,
+        } = panel_axis_hints(trajectories, variable);
 
         let trajectory: Option<Vec<Vec<f64>>> = trajectories
             .rows
@@ -123,40 +133,39 @@ pub fn simulation_results(
 fn panel_axis_hints(
     trajectories: &Trajectories,
     variable: &fmi_rs::model_description::fmi3::ModelVariable,
-) -> (
-    Option<String>,
-    Option<Vec<(f64, String)>>,
-    Option<(f64, f64)>,
-) {
+) -> PanelAxisHints {
     if matches!(variable.variableType, VariableType::Boolean { .. }) {
-        return (
-            Some("rgba(0, 0, 255, 0.1)".to_string()),
-            Some(vec![(0.0, "false".to_string()), (1.0, "true".to_string())]),
-            Some((-0.1, 1.1)),
-        );
+        return PanelAxisHints {
+            fill: Some("rgba(0, 0, 255, 0.1)".to_string()),
+            y_ticks: Some(vec![(0.0, "false".to_string()), (1.0, "true".to_string())]),
+            range: Some((-0.1, 1.1)),
+        };
     }
 
-    if let VariableType::Enumeration { declaredType, .. } = &variable.variableType {
-        if let Some(TypeDefinition::Enumeration { items, .. }) = trajectories
+    if let VariableType::Enumeration { declaredType, .. } = &variable.variableType
+        && let Some(TypeDefinition::Enumeration { items, .. }) = trajectories
             .model_description
             .get_type_definition(declaredType)
-        {
-            let y_ticks: Vec<(f64, String)> = items
-                .iter()
-                .map(|item| (item.value as f64, item.name.clone()))
-                .collect();
-            let y_min = items.iter().map(|i| i.value).min().map(|v| v as f64);
-            let y_max = items.iter().map(|i| i.value).max().map(|v| v as f64);
-            return (
-                None,
-                Some(y_ticks),
-                match (y_min, y_max) {
-                    (Some(min), Some(max)) => Some((min, max)),
-                    _ => None,
-                },
-            );
-        }
+    {
+        let y_ticks: Vec<(f64, String)> = items
+            .iter()
+            .map(|item| (item.value as f64, item.name.clone()))
+            .collect();
+        let y_min = items.iter().map(|i| i.value).min().map(|v| v as f64);
+        let y_max = items.iter().map(|i| i.value).max().map(|v| v as f64);
+        return PanelAxisHints {
+            fill: None,
+            y_ticks: Some(y_ticks),
+            range: match (y_min, y_max) {
+                (Some(min), Some(max)) => Some((min, max)),
+                _ => None,
+            },
+        };
     }
 
-    (None, None, None)
+    PanelAxisHints {
+        fill: None,
+        y_ticks: None,
+        range: None,
+    }
 }

@@ -1,9 +1,8 @@
-use std::{fs::read_to_string, ops::Range, path::Path, vec};
+use std::{fs::read_to_string, path::Path};
 
 use fmi_rs::model_description::{DefaultExperiment, FMIMajorVersion};
 
 use crate::{SimulateArgs, prepare_fmu};
-use itertools::Itertools;
 
 pub mod fmi2;
 pub mod fmi3;
@@ -151,55 +150,4 @@ pub fn simulate_config(config_file: &str) -> anyhow::Result<()> {
         .map(|path| resolve_config_path(config_dir, path));
 
     simulate_fmu(&toml_args)
-}
-
-/// Returns a list of Range<usize> for slicing.
-/// The first element at an event (first duplicate) is included in the prior range.
-/// Intermediate duplicates are skipped, and the next range starts at the last duplicate.
-pub fn split_time_intervals_ranges(time_steps: &[f64]) -> Vec<Range<usize>> {
-    let mut intervals = vec![];
-
-    if let Some(start_time) = time_steps.first() {
-        let mut last_idx = 0usize;
-        let mut last_time = *start_time;
-
-        for (idx, (t0, t1)) in time_steps.iter().copied().tuple_windows().enumerate() {
-            if t0 == t1 {
-                if t0 != last_time {
-                    intervals.push(last_idx..idx.saturating_add(1));
-                }
-                last_idx = idx.saturating_add(1);
-                last_time = t0;
-            }
-        }
-
-        intervals.push(last_idx..time_steps.len());
-    }
-
-    intervals
-}
-
-#[cfg(test)]
-mod tests {
-    use super::split_time_intervals_ranges;
-    use std::ops::Range;
-
-    #[test]
-    fn split_time_intervals_ranges_handles_empty_and_single_step_inputs() {
-        assert_eq!(split_time_intervals_ranges(&[]), Vec::<Range<usize>>::new());
-        assert_eq!(split_time_intervals_ranges(&[0.0]), vec![0..1]);
-    }
-
-    #[test]
-    fn split_time_intervals_ranges_returns_one_range_without_events() {
-        assert_eq!(split_time_intervals_ranges(&[0.0, 1.0, 2.0]), vec![0..3]);
-    }
-
-    #[test]
-    fn split_time_intervals_ranges_splits_at_duplicate_times() {
-        assert_eq!(
-            split_time_intervals_ranges(&[0., 1., 2., 2., 2., 3., 4., 4., 5.]),
-            vec![0..3, 4..7, 7..9]
-        );
-    }
 }

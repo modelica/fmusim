@@ -58,12 +58,6 @@ pub fn render_html(results: &SimulationResults, output_path: impl AsRef<Path>) -
     fs::write(output_path, html_content)
 }
 
-// pub fn render_html(results: SimulationResults) {
-//     generate_html_report(&results, "plot.html").expect("Failed to write report");
-
-//     println!("Plot report generated successfully at plot.html");
-// }
-
 pub fn open_in_browser(path: impl AsRef<Path>) -> anyhow::Result<()> {
     let path_str = path
         .as_ref()
