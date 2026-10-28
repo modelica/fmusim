@@ -182,12 +182,8 @@ pub fn simulate_fmu(
         let mut results = plot::fmi3::simulation_results(&trajectories, ref_trajectories.as_ref());
         results.log_x = args.log_time_scale;
 
-        if let Some(plot_path) = args.plot_file.as_deref() {
-            plot::render_html(&results, plot_path)
-                .with_context(|| format!("Failed to write plot file '{plot_path}'"))?;
-            if args.show_plot {
-                open_in_browser(plot_path)?;
-            }
+        let html_path = if let Some(plot_path) = args.plot_file.as_deref() {
+            PathBuf::from(plot_path)
         } else {
             let prefix = Path::new(&args.fmu_file)
                 .file_stem()
@@ -202,9 +198,13 @@ pub fn simulate_fmu(
                 .tempfile()
                 .context("Failed to create temporary plot file")?;
 
-            plot::render_html(&results, &output_path)?;
+            PathBuf::from(output_path.as_ref())
+        };
 
-            open_in_browser(output_path)?;
+        plot::render_html(&results, &html_path)?;
+
+        if args.show_plot {
+            open_in_browser(html_path)?;
         }
     }
 
