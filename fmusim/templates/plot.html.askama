@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Simulation Plot</title>
+  <title>{{ title }}</title>
   <style>
 /*! https://github.com/leeoniya/uPlot (v1.6.25) */
 {% include "vendor/uPlot.min.css" %}

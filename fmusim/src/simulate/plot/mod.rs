@@ -44,14 +44,22 @@ pub struct SimulationResults {
 #[derive(Template)]
 #[template(path = "plot.html.askama")]
 struct PlotTemplate {
+    title: String,
     plot_data_json: String,
 }
 
-pub fn render_html(results: &SimulationResults, output_path: impl AsRef<Path>) -> io::Result<()> {
+pub fn render_html(
+    results: &SimulationResults,
+    title: impl Into<String>,
+    output_path: impl AsRef<Path>,
+) -> io::Result<()> {
     let plot_data_json = serde_json::to_string(results)
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
-    let html_content = PlotTemplate { plot_data_json }
+    let html_content = PlotTemplate {
+        title: title.into(),
+        plot_data_json,
+    }
         .render()
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 

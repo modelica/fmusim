@@ -201,7 +201,7 @@ pub fn simulate_fmu(
             PathBuf::from(output_path.as_ref())
         };
 
-        plot::render_html(&results, &html_path)?;
+        plot::render_html(&results, &model_description.modelName, &html_path)?;
 
         if args.show_plot {
             open_in_browser(html_path)?;
