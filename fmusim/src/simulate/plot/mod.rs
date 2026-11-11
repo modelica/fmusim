@@ -60,8 +60,8 @@ pub fn render_html(
         title: title.into(),
         plot_data_json,
     }
-        .render()
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    .render()
+    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
     fs::write(output_path, html_content)
 }
